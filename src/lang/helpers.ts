@@ -47,6 +47,7 @@ const localeMap: { [k: string]: Partial<Lang> } = {
   tr,
   uk,
   'zh-TW': zhTW,
+  'zh-CN': zhCN,
   zh: zhCN,
 };
 
