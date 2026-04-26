@@ -507,6 +507,14 @@ export default class KanbanPlugin extends Plugin {
               )
               .addItem((item) =>
                 item
+                  .setTitle(t('View as waterfall'))
+                  .setSection('pane')
+                  .setIcon('lucide-columns')
+                  .setChecked(boardView === 'waterfall')
+                  .onClick(() => kanbanView.setView('waterfall'))
+              )
+              .addItem((item) =>
+                item
                   .setTitle(t('Open board settings'))
                   .setSection('pane')
                   .setIcon('lucide-settings')
@@ -706,6 +714,22 @@ export default class KanbanPlugin extends Plugin {
 
         if (view && view instanceof KanbanView) {
           view.setView('list');
+        }
+      },
+    });
+
+    this.addCommand({
+      id: 'view-waterfall',
+      name: t('View as waterfall'),
+      checkCallback: (checking) => {
+        const view = app.workspace.getActiveViewOfType(KanbanView);
+
+        if (checking) {
+          return view && view instanceof KanbanView;
+        }
+
+        if (view && view instanceof KanbanView) {
+          view.setView('waterfall');
         }
       },
     });

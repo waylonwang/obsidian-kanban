@@ -288,6 +288,31 @@ button.kanban-plugin__search-cancel-button .kanban-plugin__icon {
       flex-direction: column;
     }
   }
+
+  // 瀑布流视图样式 - 使用 CSS columns 实现多列布局
+  &.kanban-plugin__waterfall {
+    > div {
+      display: block;
+      height: fit-content;
+      width: 100%;
+      padding: 1rem;
+    }
+
+    .kanban-plugin__waterfall-container {
+      width: 100%;
+      column-width: var(--lane-width);
+      column-gap: 10px;
+    }
+
+    .kanban-plugin__lane-wrapper {
+      display: block;
+      margin-block-end: 10px;
+      margin-inline-end: 0;
+      break-inside: avoid;
+      max-height: none;
+      width: 100%;
+    }
+  }
 }
 
 .is-mobile .view-content:not(.is-mobile-editing) .kanban-plugin__board > div {

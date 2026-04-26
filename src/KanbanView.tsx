@@ -410,6 +410,13 @@ export class KanbanView extends TextFileView implements HoverParent {
                 .setChecked(view === 'list')
                 .onClick(() => this.setView('list'))
             )
+            .addItem((item) =>
+              item
+                .setTitle(t('View as waterfall'))
+                .setIcon('lucide-columns')
+                .setChecked(view === 'waterfall')
+                .onClick(() => this.setView('waterfall'))
+            )
             .showAtMouseEvent(evt);
         }
       );
