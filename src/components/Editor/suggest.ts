@@ -27,6 +27,13 @@ export function matchDateTrigger(dateTrigger: string, editor: Editor, cursor: Ed
   return textCtx.match(dateTriggerRegex);
 }
 
+export function matchTagTrigger(editor: Editor, cursor: EditorPosition) {
+  const textCtx = (editor.getLine(cursor.line) || '').slice(0, cursor.ch);
+  // 只匹配 #! 和 #@ 开头的特殊标签格式，避免与 Obsidian 原生标签下拉冲突
+  const tagRegex = /(?:^|\s)(#[!@][^\s\u2000-\u206F\u2E00-\u2E7F'"#$%&()*+,.:;<=>?^`{|}~[\]\\]*)$/;
+  return textCtx.match(tagRegex);
+}
+
 export class DateSuggest extends EditorSuggest<[]> {
   plugin: KanbanPlugin;
   app: App;
@@ -216,5 +223,88 @@ export class TimeSuggest extends EditorSuggest<string> {
   close(): void {
     super.close();
     this.times = null;
+  }
+}
+
+export class TagSuggest extends EditorSuggest<string> {
+  plugin: KanbanPlugin;
+  app: App;
+  tags: string[];
+
+  constructor(app: App, plugin: KanbanPlugin) {
+    super(app);
+    this.app = app;
+    this.plugin = plugin;
+  }
+
+  onTrigger(cursor: EditorPosition, editor: Editor, file: TFile): EditorSuggestTriggerInfo | null {
+    const stateManager = this.plugin.getStateManager(file);
+    if (!stateManager) return null;
+
+    const match = matchTagTrigger(editor, cursor);
+    if (!match) return null;
+
+    // 获取所有标签：从当前文件和所有 Kanban 卡片
+    const allTags: Set<string> = new Set();
+
+    // 从当前文件的 frontmatter 和内容获取标签
+    const fileCache = this.app.metadataCache.getFileCache(file);
+    if (fileCache?.tags) {
+      fileCache.tags.forEach((t) => allTags.add(t.tag));
+    }
+    if (Array.isArray(fileCache?.frontmatter?.tags)) {
+      fileCache.frontmatter.tags.forEach((t: string) => allTags.add(`#${t}`));
+    }
+
+    // 从所有 Kanban 文件获取标签
+    this.plugin.stateManagers.forEach((manager) => {
+      const board = manager.state;
+      board.children.forEach((lane) => {
+        lane.children.forEach((item) => {
+          item.data.metadata.tags?.forEach((tag) => allTags.add(tag));
+        });
+      });
+    });
+
+    this.tags = Array.from(allTags).sort();
+
+    const tagText = match[1]; // 匹配到的标签文本（如 #!高）
+    return {
+      start: {
+        line: cursor.line,
+        ch: cursor.ch - tagText.length,
+      },
+      end: cursor,
+      query: tagText,
+    };
+  }
+
+  getSuggestions(context: EditorSuggestContext): string[] | Promise<string[]> {
+    const query = context.query.toLowerCase();
+    return this.tags.filter((tag) => {
+      return tag.toLowerCase().startsWith(query) || tag.toLowerCase().includes(query);
+    });
+  }
+
+  renderSuggestion(value: string, el: HTMLElement): void {
+    el.setText(value);
+  }
+
+  selectSuggestion(value: string): void {
+    const { context } = this;
+    if (!context) return;
+
+    const replacement = `${value} `;
+    context.editor.replaceRange(replacement, context.start, context.end);
+    context.editor.setCursor({
+      line: context.start.line,
+      ch: context.start.ch + replacement.length,
+    });
+    context.editor.focus();
+  }
+
+  close(): void {
+    super.close();
+    this.tags = null;
   }
 }
