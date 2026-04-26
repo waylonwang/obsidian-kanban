@@ -15,7 +15,7 @@ import { createApp } from './DragDropApp';
 import { KanbanView, kanbanIcon, kanbanViewType } from './KanbanView';
 import { KanbanSettings, KanbanSettingsTab } from './Settings';
 import { StateManager } from './StateManager';
-import { DateSuggest, TimeSuggest } from './components/Editor/suggest';
+import { DateSuggest, TagSuggest, TimeSuggest } from './components/Editor/suggest';
 import { getParentWindow } from './dnd/util/getWindow';
 import { hasFrontmatterKey } from './helpers';
 import { t } from './lang/helpers';
@@ -102,6 +102,7 @@ export default class KanbanPlugin extends Plugin {
 
     this.registerEditorSuggest(new TimeSuggest(this.app, this));
     this.registerEditorSuggest(new DateSuggest(this.app, this));
+    this.registerEditorSuggest(new TagSuggest(this.app, this));
 
     this.registerEvent(
       this.app.workspace.on('window-open', (_: any, win: Window) => {
