@@ -156,6 +156,14 @@ const lang: Partial<Lang> = {
   'Insert card after': '在下方插入卡片',
   'Move to top': '移到顶部',
   'Move to bottom': '移至底部',
+  'Move to list': '移至列表',
+  'Move to board': '移至看板',
+  'Select a board': '选择看板',
+  'Select a list': '选择列表',
+  'Target board': '目标看板',
+  'No other kanban boards found': '未找到其他看板',
+  'No lists found in this board': '此看板中未找到列表',
+  'Card moved to board': '卡片已移至看板',
 
   // components/Lane/LaneForm.tsx
   'Enter list title...': '输入新的列标题……',
