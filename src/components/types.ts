@@ -35,6 +35,18 @@ export interface TagColor {
   backgroundColor: string;
 }
 
+export interface PriorityOption {
+  label: string;
+  color: string;
+  backgroundColor: string;
+}
+
+export interface AssigneeOption {
+  label: string;
+  color: string;
+  backgroundColor: string;
+}
+
 export interface TagSort {
   tag: string;
 }
@@ -109,6 +121,8 @@ export type MetadataSetting = Nestable<DataKey>;
 export type TagColorSetting = Nestable<TagColor>;
 export type TagSortSetting = Nestable<TagSort>;
 export type DateColorSetting = Nestable<DateColor>;
+export type PriorityOptionSetting = Nestable<PriorityOption>;
+export type AssigneeOptionSetting = Nestable<AssigneeOption>;
 
 export const DataTypes = {
   Item: 'item',
@@ -118,6 +132,8 @@ export const DataTypes = {
   TagColorSetting: 'tag-color',
   TagSortSetting: 'tag-sort',
   DateColorSetting: 'date-color',
+  PriorityOptionSetting: 'priority-option',
+  AssigneeOptionSetting: 'assignee-option',
 };
 
 export const ItemTemplate = {
@@ -159,6 +175,18 @@ export const TagColorSettingTemplate = {
 export const DateColorSettingTemplate = {
   accepts: [] as string[],
   type: DataTypes.DateColorSetting,
+  children: [] as any[],
+};
+
+export const PriorityOptionSettingTemplate = {
+  accepts: [] as string[],
+  type: DataTypes.PriorityOptionSetting,
+  children: [] as any[],
+};
+
+export const AssigneeOptionSettingTemplate = {
+  accepts: [] as string[],
+  type: DataTypes.AssigneeOptionSetting,
   children: [] as any[],
 };
 

@@ -199,6 +199,11 @@ const lang: Partial<Lang> = {
   'Predefined priority options for ! trigger. Enter comma-separated values.': '预定义的优先级选项，用于 ! 触发。输入逗号分隔的值。',
   'Assignee options': '负责人选项',
   'Predefined assignee options for @ trigger. Enter comma-separated values.': '预定义的负责人选项，用于 @ 触发。输入逗号分隔的值。',
+  'Label': '标签名',
+  'Add priority': '添加优先级',
+  'Add assignee': '添加负责人',
+  'Set colors for priority options displayed in cards.': '设置看板卡片中优先级标签的颜色。',
+  'Set colors for assignee options displayed in cards.': '设置看板卡片中负责人标签的颜色。',
 
   // components/helpers/renderMarkdown.ts
   'Unable to find': '无法找到',

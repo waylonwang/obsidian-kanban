@@ -14,6 +14,7 @@ import { buildTimeArray } from '../Item/helpers';
 import { c, escapeRegExpStr } from '../helpers';
 import { applyDate, constructDatePicker, toNextMonth, toPreviousMonth } from './datepicker';
 import { Instance } from './flatpickr/types/instance';
+import { PriorityOption, AssigneeOption } from '../types';
 
 export function matchTimeTrigger(timeTrigger: string, editor: Editor, cursor: EditorPosition) {
   const textCtx = (editor.getLine(cursor.line) || '').slice(0, cursor.ch);
@@ -325,11 +326,18 @@ export class TagSuggest extends EditorSuggest<string> {
   }
 }
 
+// 带颜色信息的建议项
+interface SuggestItem {
+  label: string;
+  color?: string;
+  backgroundColor?: string;
+}
+
 // 优先级下拉选择
-export class PrioritySuggest extends EditorSuggest<string> {
+export class PrioritySuggest extends EditorSuggest<SuggestItem> {
   plugin: KanbanPlugin;
   app: App;
-  priorities: string[];
+  priorities: SuggestItem[];
 
   constructor(app: App, plugin: KanbanPlugin) {
     super(app);
@@ -344,9 +352,16 @@ export class PrioritySuggest extends EditorSuggest<string> {
     const match = matchPriorityTrigger(editor, cursor);
     if (!match) return null;
 
-    // 优先显示配置中预定义的优先级选项
-    const configuredPriorities = stateManager.getSetting('priority-options') as string[] | undefined;
-    const prioritySet: Set<string> = new Set(configuredPriorities || []);
+    // 优先显示配置中预定义的优先级选项（带颜色信息）
+    const configuredPriorities = stateManager.getSetting('priority-options') as { label: string; color?: string; backgroundColor?: string }[] | undefined;
+    const priorityMap: Map<string, SuggestItem> = new Map();
+
+    // 先添加预定义选项
+    if (configuredPriorities && configuredPriorities.length > 0) {
+      configuredPriorities.forEach(p => {
+        priorityMap.set(p.label, { label: p.label, color: p.color, backgroundColor: p.backgroundColor });
+      });
+    }
 
     // 然后添加从 Kanban 卡片收集的已有优先级标签
     this.plugin.stateManagers.forEach((manager) => {
@@ -355,7 +370,10 @@ export class PrioritySuggest extends EditorSuggest<string> {
         lane.children.forEach((item) => {
           item.data.metadata.tags?.forEach((tag) => {
             if (tag.startsWith('#!')) {
-              prioritySet.add(tag.slice(2)); // 去掉 #! 前缀
+              const label = tag.slice(2); // 去掉 #! 前缀
+              if (!priorityMap.has(label)) {
+                priorityMap.set(label, { label });
+              }
             }
           });
         });
@@ -363,16 +381,20 @@ export class PrioritySuggest extends EditorSuggest<string> {
     });
 
     // 如果没有预定义和收集到的优先级，使用默认值
-    if (prioritySet.size === 0) {
-      ['高', '中', '低', '紧急', '重要'].forEach(p => prioritySet.add(p));
+    if (priorityMap.size === 0) {
+      ['高', '中', '低', '紧急', '重要'].forEach(p => priorityMap.set(p, { label: p }));
     }
 
-    // 预定义选项排在前面
+    // 预定义选项排在前面，其他选项按字母排序排在后面
     if (configuredPriorities && configuredPriorities.length > 0) {
-      const remaining = Array.from(prioritySet).filter(p => !configuredPriorities.includes(p));
-      this.priorities = [...configuredPriorities, ...remaining.sort()];
+      const configuredLabels = configuredPriorities.map(p => p.label);
+      const remaining = Array.from(priorityMap.entries())
+        .filter(([label]) => !configuredLabels.includes(label))
+        .map(([, item]) => item)
+        .sort((a, b) => a.label.localeCompare(b.label));
+      this.priorities = [...configuredPriorities.map(p => ({ label: p.label, color: p.color, backgroundColor: p.backgroundColor })), ...remaining];
     } else {
-      this.priorities = Array.from(prioritySet).sort();
+      this.priorities = Array.from(priorityMap.values()).sort((a, b) => a.label.localeCompare(b.label));
     }
 
     const inputText = match[1] || ''; // 用户输入的内容（!后面的部分）
@@ -386,24 +408,30 @@ export class PrioritySuggest extends EditorSuggest<string> {
     };
   }
 
-  getSuggestions(context: EditorSuggestContext): string[] | Promise<string[]> {
+  getSuggestions(context: EditorSuggestContext): SuggestItem[] | Promise<SuggestItem[]> {
     const query = context.query.toLowerCase();
     return this.priorities.filter((p) => {
-      return p.toLowerCase().startsWith(query) || p.toLowerCase().includes(query);
+      return p.label.toLowerCase().startsWith(query) || p.label.toLowerCase().includes(query);
     });
   }
 
-  renderSuggestion(value: string, el: HTMLElement): void {
-    el.createEl('span', { text: '! ', cls: 'priority-indicator' });
-    el.createEl('strong', { text: value });
+  renderSuggestion(value: SuggestItem, el: HTMLElement): void {
+    const tagEl = el.createEl('a', {
+      cls: `tag ${c('item-tag')}`,
+      text: `!${value.label}`,
+    });
+    if (value.color || value.backgroundColor) {
+      tagEl.style.setProperty('--tag-color', value.color || '');
+      tagEl.style.setProperty('--tag-background', value.backgroundColor || '');
+    }
   }
 
-  selectSuggestion(value: string): void {
+  selectSuggestion(value: SuggestItem): void {
     const { context } = this;
     if (!context) return;
 
     // 将 !xxx 转换为 #!xxx
-    const replacement = `#!${value} `;
+    const replacement = `#!${value.label} `;
     context.editor.replaceRange(replacement, context.start, context.end);
     context.editor.setCursor({
       line: context.start.line,
@@ -419,10 +447,10 @@ export class PrioritySuggest extends EditorSuggest<string> {
 }
 
 // 负责人下拉选择
-export class AssigneeSuggest extends EditorSuggest<string> {
+export class AssigneeSuggest extends EditorSuggest<SuggestItem> {
   plugin: KanbanPlugin;
   app: App;
-  assignees: string[];
+  assignees: SuggestItem[];
 
   constructor(app: App, plugin: KanbanPlugin) {
     super(app);
@@ -437,9 +465,16 @@ export class AssigneeSuggest extends EditorSuggest<string> {
     const match = matchAssigneeTrigger(editor, cursor);
     if (!match) return null;
 
-    // 优先显示配置中预定义的负责人选项
-    const configuredAssignees = stateManager.getSetting('assignee-options') as string[] | undefined;
-    const assigneeSet: Set<string> = new Set(configuredAssignees || []);
+    // 优先显示配置中预定义的负责人选项（带颜色信息）
+    const configuredAssignees = stateManager.getSetting('assignee-options') as { label: string; color?: string; backgroundColor?: string }[] | undefined;
+    const assigneeMap: Map<string, SuggestItem> = new Map();
+
+    // 先添加预定义选项
+    if (configuredAssignees && configuredAssignees.length > 0) {
+      configuredAssignees.forEach(a => {
+        assigneeMap.set(a.label, { label: a.label, color: a.color, backgroundColor: a.backgroundColor });
+      });
+    }
 
     // 然后添加从 Kanban 卡片收集的已有负责人标签
     this.plugin.stateManagers.forEach((manager) => {
@@ -448,19 +483,26 @@ export class AssigneeSuggest extends EditorSuggest<string> {
         lane.children.forEach((item) => {
           item.data.metadata.tags?.forEach((tag) => {
             if (tag.startsWith('#@')) {
-              assigneeSet.add(tag.slice(2)); // 去掉 #@ 前缀
+              const label = tag.slice(2); // 去掉 #@ 前缀
+              if (!assigneeMap.has(label)) {
+                assigneeMap.set(label, { label });
+              }
             }
           });
         });
       });
     });
 
-    // 预定义选项排在前面
+    // 预定义选项排在前面，其他选项按字母排序排在后面
     if (configuredAssignees && configuredAssignees.length > 0) {
-      const remaining = Array.from(assigneeSet).filter(a => !configuredAssignees.includes(a));
-      this.assignees = [...configuredAssignees, ...remaining.sort()];
+      const configuredLabels = configuredAssignees.map(a => a.label);
+      const remaining = Array.from(assigneeMap.entries())
+        .filter(([label]) => !configuredLabels.includes(label))
+        .map(([, item]) => item)
+        .sort((a, b) => a.label.localeCompare(b.label));
+      this.assignees = [...configuredAssignees.map(a => ({ label: a.label, color: a.color, backgroundColor: a.backgroundColor })), ...remaining];
     } else {
-      this.assignees = Array.from(assigneeSet).sort();
+      this.assignees = Array.from(assigneeMap.values()).sort((a, b) => a.label.localeCompare(b.label));
     }
 
     const inputText = match[1] || ''; // 用户输入的内容（@后面的部分）
@@ -474,24 +516,30 @@ export class AssigneeSuggest extends EditorSuggest<string> {
     };
   }
 
-  getSuggestions(context: EditorSuggestContext): string[] | Promise<string[]> {
+  getSuggestions(context: EditorSuggestContext): SuggestItem[] | Promise<SuggestItem[]> {
     const query = context.query.toLowerCase();
     return this.assignees.filter((a) => {
-      return a.toLowerCase().startsWith(query) || a.toLowerCase().includes(query);
+      return a.label.toLowerCase().startsWith(query) || a.label.toLowerCase().includes(query);
     });
   }
 
-  renderSuggestion(value: string, el: HTMLElement): void {
-    el.createEl('span', { text: '@ ', cls: 'assignee-indicator' });
-    el.createEl('strong', { text: value });
+  renderSuggestion(value: SuggestItem, el: HTMLElement): void {
+    const tagEl = el.createEl('a', {
+      cls: `tag ${c('item-tag')}`,
+      text: `@${value.label}`,
+    });
+    if (value.color || value.backgroundColor) {
+      tagEl.style.setProperty('--tag-color', value.color || '');
+      tagEl.style.setProperty('--tag-background', value.backgroundColor || '');
+    }
   }
 
-  selectSuggestion(value: string): void {
+  selectSuggestion(value: SuggestItem): void {
     const { context } = this;
     if (!context) return;
 
     // 将 @xxx 转换为 #@xxx
-    const replacement = `#@${value} `;
+    const replacement = `#@${value.label} `;
     context.editor.replaceRange(replacement, context.start, context.end);
     context.editor.setCursor({
       line: context.start.line,

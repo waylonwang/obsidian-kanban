@@ -281,6 +281,11 @@ const en = {
   'Predefined priority options for ! trigger. Enter comma-separated values.': 'Predefined priority options for ! trigger. Enter comma-separated values.',
   'Assignee options': 'Assignee options',
   'Predefined assignee options for @ trigger. Enter comma-separated values.': 'Predefined assignee options for @ trigger. Enter comma-separated values.',
+  'Label': 'Label',
+  'Add priority': 'Add priority',
+  'Add assignee': 'Add assignee',
+  'Set colors for priority options displayed in cards.': 'Set colors for priority options displayed in cards.',
+  'Set colors for assignee options displayed in cards.': 'Set colors for assignee options displayed in cards.',
 
   // components/helpers/renderMarkdown.ts
   'Unable to find': 'Unable to find',
