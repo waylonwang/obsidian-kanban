@@ -34,6 +34,22 @@ export function matchTagTrigger(editor: Editor, cursor: EditorPosition) {
   return textCtx.match(tagRegex);
 }
 
+// 匹配优先级触发：输入 ! 字符
+export function matchPriorityTrigger(editor: Editor, cursor: EditorPosition) {
+  const textCtx = (editor.getLine(cursor.line) || '').slice(0, cursor.ch);
+  // 匹配行首或空格后的 ! 字符
+  const priorityRegex = /(?:^|\s)!([^!\s]*)$/;
+  return textCtx.match(priorityRegex);
+}
+
+// 匹配负责人触发：输入 @ 字符
+export function matchAssigneeTrigger(editor: Editor, cursor: EditorPosition) {
+  const textCtx = (editor.getLine(cursor.line) || '').slice(0, cursor.ch);
+  // 匹配行首或空格后的 @ 字符（排除邮箱格式）
+  const assigneeRegex = /(?:^|\s)@([^@\s]*)$/;
+  return textCtx.match(assigneeRegex);
+}
+
 export class DateSuggest extends EditorSuggest<[]> {
   plugin: KanbanPlugin;
   app: App;
@@ -306,5 +322,167 @@ export class TagSuggest extends EditorSuggest<string> {
   close(): void {
     super.close();
     this.tags = null;
+  }
+}
+
+// 优先级下拉选择
+export class PrioritySuggest extends EditorSuggest<string> {
+  plugin: KanbanPlugin;
+  app: App;
+  priorities: string[];
+
+  constructor(app: App, plugin: KanbanPlugin) {
+    super(app);
+    this.app = app;
+    this.plugin = plugin;
+  }
+
+  onTrigger(cursor: EditorPosition, editor: Editor, file: TFile): EditorSuggestTriggerInfo | null {
+    const stateManager = this.plugin.getStateManager(file);
+    if (!stateManager) return null;
+
+    const match = matchPriorityTrigger(editor, cursor);
+    if (!match) return null;
+
+    // 收集优先级选项：默认值 + 从 Kanban 卡片收集的 #!xxx 标签
+    const prioritySet: Set<string> = new Set(['高', '中', '低', '紧急', '重要']);
+
+    // 从所有 Kanban 文件收集已有的优先级标签
+    this.plugin.stateManagers.forEach((manager) => {
+      const board = manager.state;
+      board.children.forEach((lane) => {
+        lane.children.forEach((item) => {
+          item.data.metadata.tags?.forEach((tag) => {
+            if (tag.startsWith('#!')) {
+              prioritySet.add(tag.slice(2)); // 去掉 #! 前缀
+            }
+          });
+        });
+      });
+    });
+
+    this.priorities = Array.from(prioritySet).sort();
+
+    const inputText = match[1] || ''; // 用户输入的内容（!后面的部分）
+    return {
+      start: {
+        line: cursor.line,
+        ch: cursor.ch - inputText.length - 1, // 包含 ! 字符
+      },
+      end: cursor,
+      query: inputText,
+    };
+  }
+
+  getSuggestions(context: EditorSuggestContext): string[] | Promise<string[]> {
+    const query = context.query.toLowerCase();
+    return this.priorities.filter((p) => {
+      return p.toLowerCase().startsWith(query) || p.toLowerCase().includes(query);
+    });
+  }
+
+  renderSuggestion(value: string, el: HTMLElement): void {
+    el.createEl('span', { text: '! ', cls: 'priority-indicator' });
+    el.createEl('strong', { text: value });
+  }
+
+  selectSuggestion(value: string): void {
+    const { context } = this;
+    if (!context) return;
+
+    // 将 !xxx 转换为 #!xxx
+    const replacement = `#!${value} `;
+    context.editor.replaceRange(replacement, context.start, context.end);
+    context.editor.setCursor({
+      line: context.start.line,
+      ch: context.start.ch + replacement.length,
+    });
+    context.editor.focus();
+  }
+
+  close(): void {
+    super.close();
+    this.priorities = null;
+  }
+}
+
+// 负责人下拉选择
+export class AssigneeSuggest extends EditorSuggest<string> {
+  plugin: KanbanPlugin;
+  app: App;
+  assignees: string[];
+
+  constructor(app: App, plugin: KanbanPlugin) {
+    super(app);
+    this.app = app;
+    this.plugin = plugin;
+  }
+
+  onTrigger(cursor: EditorPosition, editor: Editor, file: TFile): EditorSuggestTriggerInfo | null {
+    const stateManager = this.plugin.getStateManager(file);
+    if (!stateManager) return null;
+
+    const match = matchAssigneeTrigger(editor, cursor);
+    if (!match) return null;
+
+    // 收集负责人选项：从 Kanban 卡片收集的 #@xxx 标签
+    const assigneeSet: Set<string> = new Set();
+
+    // 从所有 Kanban 文件收集已有的负责人标签
+    this.plugin.stateManagers.forEach((manager) => {
+      const board = manager.state;
+      board.children.forEach((lane) => {
+        lane.children.forEach((item) => {
+          item.data.metadata.tags?.forEach((tag) => {
+            if (tag.startsWith('#@')) {
+              assigneeSet.add(tag.slice(2)); // 去掉 #@ 前缀
+            }
+          });
+        });
+      });
+    });
+
+    this.assignees = Array.from(assigneeSet).sort();
+
+    const inputText = match[1] || ''; // 用户输入的内容（@后面的部分）
+    return {
+      start: {
+        line: cursor.line,
+        ch: cursor.ch - inputText.length - 1, // 包含 @ 字符
+      },
+      end: cursor,
+      query: inputText,
+    };
+  }
+
+  getSuggestions(context: EditorSuggestContext): string[] | Promise<string[]> {
+    const query = context.query.toLowerCase();
+    return this.assignees.filter((a) => {
+      return a.toLowerCase().startsWith(query) || a.toLowerCase().includes(query);
+    });
+  }
+
+  renderSuggestion(value: string, el: HTMLElement): void {
+    el.createEl('span', { text: '@ ', cls: 'assignee-indicator' });
+    el.createEl('strong', { text: value });
+  }
+
+  selectSuggestion(value: string): void {
+    const { context } = this;
+    if (!context) return;
+
+    // 将 @xxx 转换为 #@xxx
+    const replacement = `#@${value} `;
+    context.editor.replaceRange(replacement, context.start, context.end);
+    context.editor.setCursor({
+      line: context.start.line,
+      ch: context.start.ch + replacement.length,
+    });
+    context.editor.focus();
+  }
+
+  close(): void {
+    super.close();
+    this.assignees = null;
   }
 }
