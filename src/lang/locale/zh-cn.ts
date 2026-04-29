@@ -193,6 +193,13 @@ const lang: Partial<Lang> = {
   'Sort by card text': '以卡片文本排序',
   'Sort by date': '以日期排序',
 
+  // Priority & Assignee settings
+  'Priority & Assignee': '优先级与负责人',
+  'Priority options': '优先级选项',
+  'Predefined priority options for ! trigger. Enter comma-separated values.': '预定义的优先级选项，用于 ! 触发。输入逗号分隔的值。',
+  'Assignee options': '负责人选项',
+  'Predefined assignee options for @ trigger. Enter comma-separated values.': '预定义的负责人选项，用于 @ 触发。输入逗号分隔的值。',
+
   // components/helpers/renderMarkdown.ts
   'Unable to find': '无法找到',
   'Open in default app': '在默认应用中打开',

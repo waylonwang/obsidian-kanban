@@ -344,10 +344,11 @@ export class PrioritySuggest extends EditorSuggest<string> {
     const match = matchPriorityTrigger(editor, cursor);
     if (!match) return null;
 
-    // 收集优先级选项：默认值 + 从 Kanban 卡片收集的 #!xxx 标签
-    const prioritySet: Set<string> = new Set(['高', '中', '低', '紧急', '重要']);
+    // 优先显示配置中预定义的优先级选项
+    const configuredPriorities = stateManager.getSetting('priority-options') as string[] | undefined;
+    const prioritySet: Set<string> = new Set(configuredPriorities || []);
 
-    // 从所有 Kanban 文件收集已有的优先级标签
+    // 然后添加从 Kanban 卡片收集的已有优先级标签
     this.plugin.stateManagers.forEach((manager) => {
       const board = manager.state;
       board.children.forEach((lane) => {
@@ -361,7 +362,18 @@ export class PrioritySuggest extends EditorSuggest<string> {
       });
     });
 
-    this.priorities = Array.from(prioritySet).sort();
+    // 如果没有预定义和收集到的优先级，使用默认值
+    if (prioritySet.size === 0) {
+      ['高', '中', '低', '紧急', '重要'].forEach(p => prioritySet.add(p));
+    }
+
+    // 预定义选项排在前面
+    if (configuredPriorities && configuredPriorities.length > 0) {
+      const remaining = Array.from(prioritySet).filter(p => !configuredPriorities.includes(p));
+      this.priorities = [...configuredPriorities, ...remaining.sort()];
+    } else {
+      this.priorities = Array.from(prioritySet).sort();
+    }
 
     const inputText = match[1] || ''; // 用户输入的内容（!后面的部分）
     return {
@@ -425,10 +437,11 @@ export class AssigneeSuggest extends EditorSuggest<string> {
     const match = matchAssigneeTrigger(editor, cursor);
     if (!match) return null;
 
-    // 收集负责人选项：从 Kanban 卡片收集的 #@xxx 标签
-    const assigneeSet: Set<string> = new Set();
+    // 优先显示配置中预定义的负责人选项
+    const configuredAssignees = stateManager.getSetting('assignee-options') as string[] | undefined;
+    const assigneeSet: Set<string> = new Set(configuredAssignees || []);
 
-    // 从所有 Kanban 文件收集已有的负责人标签
+    // 然后添加从 Kanban 卡片收集的已有负责人标签
     this.plugin.stateManagers.forEach((manager) => {
       const board = manager.state;
       board.children.forEach((lane) => {
@@ -442,7 +455,13 @@ export class AssigneeSuggest extends EditorSuggest<string> {
       });
     });
 
-    this.assignees = Array.from(assigneeSet).sort();
+    // 预定义选项排在前面
+    if (configuredAssignees && configuredAssignees.length > 0) {
+      const remaining = Array.from(assigneeSet).filter(a => !configuredAssignees.includes(a));
+      this.assignees = [...configuredAssignees, ...remaining.sort()];
+    } else {
+      this.assignees = Array.from(assigneeSet).sort();
+    }
 
     const inputText = match[1] || ''; // 用户输入的内容（@后面的部分）
     return {

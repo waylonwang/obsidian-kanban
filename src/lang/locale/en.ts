@@ -275,6 +275,13 @@ const en = {
   'Sort by tags': 'Sort by tags',
   'Sort by': 'Sort by',
 
+  // Priority & Assignee settings
+  'Priority & Assignee': 'Priority & Assignee',
+  'Priority options': 'Priority options',
+  'Predefined priority options for ! trigger. Enter comma-separated values.': 'Predefined priority options for ! trigger. Enter comma-separated values.',
+  'Assignee options': 'Assignee options',
+  'Predefined assignee options for @ trigger. Enter comma-separated values.': 'Predefined assignee options for @ trigger. Enter comma-separated values.',
+
   // components/helpers/renderMarkdown.ts
   'Unable to find': 'Unable to find',
   'Open in default app': 'Open in default app',

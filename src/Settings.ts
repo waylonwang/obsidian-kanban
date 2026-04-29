@@ -90,6 +90,8 @@ export interface KanbanSettings {
   'tag-sort'?: TagSort[];
   'time-format'?: string;
   'time-trigger'?: string;
+  'priority-options'?: string[];
+  'assignee-options'?: string[];
 }
 
 export interface KanbanViewSettings {
@@ -138,6 +140,8 @@ export const settingKeyLookup: Set<keyof KanbanSettings> = new Set([
   'tag-sort',
   'time-format',
   'time-trigger',
+  'priority-options',
+  'assignee-options',
 ]);
 
 export type SettingRetriever = <K extends keyof KanbanSettings>(
@@ -588,6 +592,41 @@ export class SettingsManager {
         }
       });
     });
+
+    // Priority and Assignee settings
+    contentEl.createEl('h4', { text: t('Priority & Assignee') });
+
+    new Setting(contentEl)
+      .setName(t('Priority options'))
+      .setDesc(t('Predefined priority options for ! trigger. Enter comma-separated values.'))
+      .addText((text) => {
+        const [value, globalValue] = this.getSetting('priority-options', local);
+        text.setValue((value as string[])?.join(', ') || (globalValue as string[])?.join(', ') || '');
+        text.onChange((newValue) => {
+          const options = newValue.split(',').map(s => s.trim()).filter(s => s);
+          this.applySettingsUpdate({
+            'priority-options': {
+              $set: options.length > 0 ? options : undefined,
+            },
+          });
+        });
+      });
+
+    new Setting(contentEl)
+      .setName(t('Assignee options'))
+      .setDesc(t('Predefined assignee options for @ trigger. Enter comma-separated values.'))
+      .addText((text) => {
+        const [value, globalValue] = this.getSetting('assignee-options', local);
+        text.setValue((value as string[])?.join(', ') || (globalValue as string[])?.join(', ') || '');
+        text.onChange((newValue) => {
+          const options = newValue.split(',').map(s => s.trim()).filter(s => s);
+          this.applySettingsUpdate({
+            'assignee-options': {
+              $set: options.length > 0 ? options : undefined,
+            },
+          });
+        });
+      });
 
     contentEl.createEl('h4', { text: t('Date & Time') });
 
