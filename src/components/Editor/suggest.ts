@@ -14,7 +14,6 @@ import { buildTimeArray } from '../Item/helpers';
 import { c, escapeRegExpStr } from '../helpers';
 import { applyDate, constructDatePicker, toNextMonth, toPreviousMonth } from './datepicker';
 import { Instance } from './flatpickr/types/instance';
-import { PriorityOption, AssigneeOption } from '../types';
 
 export function matchTimeTrigger(timeTrigger: string, editor: Editor, cursor: EditorPosition) {
   const textCtx = (editor.getLine(cursor.line) || '').slice(0, cursor.ch);
@@ -363,17 +362,14 @@ export class PrioritySuggest extends EditorSuggest<SuggestItem> {
       });
     }
 
-    // 然后添加从 Kanban 卡片收集的已有优先级标签
+    // 然后添加从 Kanban 卡片收集的已有优先级
     this.plugin.stateManagers.forEach((manager) => {
       const board = manager.state;
       board.children.forEach((lane) => {
         lane.children.forEach((item) => {
-          item.data.metadata.tags?.forEach((tag) => {
-            if (tag.startsWith('#!')) {
-              const label = tag.slice(2); // 去掉 #! 前缀
-              if (!priorityMap.has(label)) {
-                priorityMap.set(label, { label });
-              }
+          item.data.metadata.priorities?.forEach((priority) => {
+            if (!priorityMap.has(priority)) {
+              priorityMap.set(priority, { label: priority });
             }
           });
         });
@@ -430,8 +426,8 @@ export class PrioritySuggest extends EditorSuggest<SuggestItem> {
     const { context } = this;
     if (!context) return;
 
-    // 将 !xxx 转换为 #!xxx
-    const replacement = `#!${value.label} `;
+    // 保持 !xxx 格式，不转换
+    const replacement = `!${value.label} `;
     context.editor.replaceRange(replacement, context.start, context.end);
     context.editor.setCursor({
       line: context.start.line,
@@ -476,17 +472,14 @@ export class AssigneeSuggest extends EditorSuggest<SuggestItem> {
       });
     }
 
-    // 然后添加从 Kanban 卡片收集的已有负责人标签
+    // 然后添加从 Kanban 卡片收集的已有负责人
     this.plugin.stateManagers.forEach((manager) => {
       const board = manager.state;
       board.children.forEach((lane) => {
         lane.children.forEach((item) => {
-          item.data.metadata.tags?.forEach((tag) => {
-            if (tag.startsWith('#@')) {
-              const label = tag.slice(2); // 去掉 #@ 前缀
-              if (!assigneeMap.has(label)) {
-                assigneeMap.set(label, { label });
-              }
+          item.data.metadata.assignees?.forEach((assignee) => {
+            if (!assigneeMap.has(assignee)) {
+              assigneeMap.set(assignee, { label: assignee });
             }
           });
         });
@@ -538,8 +531,8 @@ export class AssigneeSuggest extends EditorSuggest<SuggestItem> {
     const { context } = this;
     if (!context) return;
 
-    // 将 @xxx 转换为 #@xxx
-    const replacement = `#@${value.label} `;
+    // 保持 @xxx 格式，不转换
+    const replacement = `@${value.label} `;
     context.editor.replaceRange(replacement, context.start, context.end);
     context.editor.setCursor({
       line: context.start.line,

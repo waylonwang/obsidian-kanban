@@ -1,12 +1,22 @@
 import { moment } from 'obsidian';
 import { StateManager } from 'src/StateManager';
-import { c, escapeRegExpStr, getDateColorFn, getTagColorFn } from 'src/components/helpers';
-import { Board, DataTypes, DateColor, Item, Lane, TagColor } from 'src/components/types';
+import { c, escapeRegExpStr, getDateColorFn } from 'src/components/helpers';
+import { Board, DataTypes, DateColor, Item, Lane } from 'src/components/types';
 import { Path } from 'src/dnd/types';
 import { getEntityFromPath } from 'src/dnd/util/data';
 import { Op } from 'src/helpers/patch';
 
 import { getSearchValue } from '../common';
+
+// Helper to get color for priority/assignee from configured options
+function getLabelColorFn(options: { label: string; color?: string; backgroundColor?: string }[] | undefined) {
+  return (label: string): { color?: string; backgroundColor?: string } | null => {
+    if (!options) return null;
+    const option = options.find(o => o.label === label);
+    if (option) return { color: option.color, backgroundColor: option.backgroundColor };
+    return null;
+  };
+}
 
 export function hydrateLane(stateManager: StateManager, lane: Lane) {
   return lane;
@@ -14,7 +24,8 @@ export function hydrateLane(stateManager: StateManager, lane: Lane) {
 
 export function preprocessTitle(stateManager: StateManager, title: string) {
   const getDateColor = getDateColorFn(stateManager.getSetting('date-colors'));
-  const getTagColor = getTagColorFn(stateManager.getSetting('tag-colors'));
+  const getPriorityColor = getLabelColorFn(stateManager.getSetting('priority-options'));
+  const getAssigneeColor = getLabelColorFn(stateManager.getSetting('assignee-options'));
   const dateTrigger = stateManager.getSetting('date-trigger');
   const dateFormat = stateManager.getSetting('date-format');
   const dateDisplayFormat = stateManager.getSetting('date-display-format');
@@ -38,16 +49,34 @@ export function preprocessTitle(stateManager: StateManager, title: string) {
     return { wrapperClass: baseClass, wrapperStyle };
   };
 
-  // 处理特殊标签前缀 #! 和 #@
-  // 这些标签格式 Obsidian 原生不认识，需要转换为 HTML
-  const specialTagRegex = /(^|\s)(#[!@][^\s\u2000-\u206F\u2E00-\u2E7F'"#$%&()*+,.:;<=>?^`{|}~[\]\\]+)/g;
-  title = title.replace(specialTagRegex, (_match, space, tag) => {
-    const tagColor: TagColor = getTagColor(tag);
-    let tagStyle = '';
-    if (tagColor) {
-      tagStyle = ` style="--tag-color: ${tagColor.color}; --tag-background: ${tagColor.backgroundColor};"`;
+  // 渲染优先级 !xxx
+  const priorityRegex = /(^|\s)(!([^\s\u2000-\u206F\u2E00-\u2E7F'"#$%&()*+,.:;<=>?@^`{|}~[\]\\]+))/g;
+  title = title.replace(priorityRegex, (_match, space, fullMatch, label) => {
+    const colorInfo = getPriorityColor(label);
+    let style = '';
+    if (colorInfo) {
+      if (colorInfo.backgroundColor) {
+        style = ` style="--tag-color: ${colorInfo.color || ''}; --tag-background: ${colorInfo.backgroundColor};"`;
+      } else if (colorInfo.color) {
+        style = ` style="--tag-color: ${colorInfo.color};"`;
+      }
     }
-    return `${space}<a href="${tag}" class="tag ${c('item-tag')}"${tagStyle}><span>${tag[0]}</span>${tag.slice(1)}</a>`;
+    return `${space}<a class="tag ${c('item-tag')} ${c('item-priority')}"${style}>${fullMatch}</a>`;
+  });
+
+  // 渲染负责人 @xxx
+  const assigneeRegex = /(^|\s)(@([^\s\u2000-\u206F\u2E00-\u2E7F'"#$%&()*+,.:;<=>?@^`{|}~[\]\\]+))/g;
+  title = title.replace(assigneeRegex, (_match, space, fullMatch, label) => {
+    const colorInfo = getAssigneeColor(label);
+    let style = '';
+    if (colorInfo) {
+      if (colorInfo.backgroundColor) {
+        style = ` style="--tag-color: ${colorInfo.color || ''}; --tag-background: ${colorInfo.backgroundColor};"`;
+      } else if (colorInfo.color) {
+        style = ` style="--tag-color: ${colorInfo.color};"`;
+      }
+    }
+    return `${space}<a class="tag ${c('item-tag')} ${c('item-assignee')}"${style}>${fullMatch}</a>`;
   });
 
   title = title.replace(

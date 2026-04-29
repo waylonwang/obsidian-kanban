@@ -12,6 +12,7 @@ import { genericWrappedExtension, genericWrappedFromMarkdown } from './extension
 import { internalMarkdownLinks } from './extensions/internalMarkdownLink';
 import { tagExtension, tagFromMarkdown } from './extensions/tag';
 import { gfmTaskListItem, gfmTaskListItemFromMarkdown } from './extensions/taskList';
+import { priorityExtension, priorityFromMarkdown, assigneeExtension, assigneeFromMarkdown } from './extensions/priorityAssignee';
 import { FileAccessor } from './helpers/parser';
 
 function extractFrontmatter(md: string) {
@@ -71,6 +72,8 @@ function getExtensions(stateManager: StateManager) {
     genericWrappedExtension('embedWikilink', '![[', ']]'),
     genericWrappedExtension('wikilink', '[[', ']]'),
     tagExtension(),
+    priorityExtension(),
+    assigneeExtension(),
     blockidExtension(),
   ];
 }
@@ -160,6 +163,8 @@ function getMdastExtensions(stateManager: StateManager) {
       }
     }),
     tagFromMarkdown(),
+    priorityFromMarkdown(),
+    assigneeFromMarkdown(),
     blockidFromMarkdown(),
   ];
 }

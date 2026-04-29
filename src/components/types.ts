@@ -82,6 +82,8 @@ export interface ItemMetadata {
   timeStr?: string;
   time?: moment.Moment;
   tags?: string[];
+  priorities?: string[];
+  assignees?: string[];
   fileAccessor?: FileAccessor;
   file?: TFile | null;
   fileMetadata?: FileMetadata;
