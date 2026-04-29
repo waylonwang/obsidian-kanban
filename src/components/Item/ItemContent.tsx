@@ -180,6 +180,97 @@ export function Tags({
   );
 }
 
+// Helper to get color for priority/assignee
+function useGetLabelColorFn(stateManager: StateManager, settingKey: 'priority-options' | 'assignee-options') {
+  return useCallback(
+    (label: string) => {
+      const options = stateManager.getSetting(settingKey) as { label: string; color?: string; backgroundColor?: string }[] | undefined;
+      if (!options) return null;
+      const option = options.find(o => o.label === label);
+      return option ? { color: option.color, backgroundColor: option.backgroundColor } : null;
+    },
+    [stateManager, settingKey]
+  );
+}
+
+export function Priorities({
+  priorities,
+  searchQuery,
+}: {
+  priorities?: string[];
+  searchQuery?: string;
+}) {
+  const { stateManager } = useContext(KanbanContext);
+  const getPriorityColor = useGetLabelColorFn(stateManager, 'priority-options');
+  const shouldShow = stateManager.useSetting('move-priorities');
+
+  if (!priorities?.length || !shouldShow) return null;
+
+  return (
+    <div className={c('item-priorities')}>
+      {priorities.map((priority, i) => {
+        const colorInfo = getPriorityColor(priority);
+
+        return (
+          <a
+            key={i}
+            className={`tag ${c('item-tag')} ${c('item-priority')} ${
+              searchQuery && priority.toLocaleLowerCase().contains(searchQuery) ? 'is-search-match' : ''
+            }`}
+            style={
+              colorInfo && {
+                '--tag-color': colorInfo.color || '',
+                '--tag-background': colorInfo.backgroundColor || '',
+              }
+            }
+          >
+            !{priority}
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+
+export function Assignees({
+  assignees,
+  searchQuery,
+}: {
+  assignees?: string[];
+  searchQuery?: string;
+}) {
+  const { stateManager } = useContext(KanbanContext);
+  const getAssigneeColor = useGetLabelColorFn(stateManager, 'assignee-options');
+  const shouldShow = stateManager.useSetting('move-assignees');
+
+  if (!assignees?.length || !shouldShow) return null;
+
+  return (
+    <div className={c('item-assignees')}>
+      {assignees.map((assignee, i) => {
+        const colorInfo = getAssigneeColor(assignee);
+
+        return (
+          <a
+            key={i}
+            className={`tag ${c('item-tag')} ${c('item-assignee')} ${
+              searchQuery && assignee.toLocaleLowerCase().contains(searchQuery) ? 'is-search-match' : ''
+            }`}
+            style={
+              colorInfo && {
+                '--tag-color': colorInfo.color || '',
+                '--tag-background': colorInfo.backgroundColor || '',
+              }
+            }
+          >
+            @{assignee}
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+
 export const ItemContent = memo(function ItemContent({
   item,
   editState,
@@ -303,6 +394,8 @@ export const ItemContent = memo(function ItemContent({
             getDateColor={getDateColor}
           />
           <InlineMetadata item={item} stateManager={stateManager} />
+          <Priorities priorities={item.data.metadata.priorities} searchQuery={searchQuery} />
+          <Assignees assignees={item.data.metadata.assignees} searchQuery={searchQuery} />
           <Tags tags={item.data.metadata.tags} searchQuery={searchQuery} />
         </div>
       )}

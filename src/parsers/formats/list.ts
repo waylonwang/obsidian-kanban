@@ -51,6 +51,8 @@ interface TaskItem extends ListItem {
 export function listItemToItemData(stateManager: StateManager, md: string, item: TaskItem) {
   const moveTags = stateManager.getSetting('move-tags');
   const moveDates = stateManager.getSetting('move-dates');
+  const movePriorities = stateManager.getSetting('move-priorities');
+  const moveAssignees = stateManager.getSetting('move-assignees');
 
   const startNode = item.children.first();
   const endNode = item.children.last();
@@ -155,7 +157,7 @@ export function listItemToItemData(stateManager: StateManager, md: string, item:
 
         itemData.metadata.priorities.push(genericNode.value);
 
-        if (moveTags) {
+        if (movePriorities) {
           title = markRangeForDeletion(title, {
             start: node.position.start.offset - itemBoundary.start,
             end: node.position.end.offset - itemBoundary.start,
@@ -171,7 +173,7 @@ export function listItemToItemData(stateManager: StateManager, md: string, item:
 
         itemData.metadata.assignees.push(genericNode.value);
 
-        if (moveTags) {
+        if (moveAssignees) {
           title = markRangeForDeletion(title, {
             start: node.position.start.offset - itemBoundary.start,
             end: node.position.end.offset - itemBoundary.start,
@@ -261,8 +263,35 @@ export function listItemToItemData(stateManager: StateManager, md: string, item:
   }
 
   itemData.metadata.tags?.sort(defaultSort);
-  itemData.metadata.priorities?.sort(defaultSort);
-  itemData.metadata.assignees?.sort(defaultSort);
+
+  // 优先级和负责人按配置列表顺序排序，未配置的按字母排序排在后面
+  const configuredPriorities = stateManager.getSetting('priority-options') as { label: string }[] | undefined;
+  if (configuredPriorities?.length && itemData.metadata.priorities?.length) {
+    const configuredLabels = configuredPriorities.map(p => p.label);
+    const configured = itemData.metadata.priorities.filter(p => configuredLabels.includes(p));
+    const remaining = itemData.metadata.priorities.filter(p => !configuredLabels.includes(p)).sort(defaultSort);
+    // 按配置顺序排列已配置的，未配置的按字母排序排在后面
+    itemData.metadata.priorities = [
+      ...configured.sort((a, b) => configuredLabels.indexOf(a) - configuredLabels.indexOf(b)),
+      ...remaining,
+    ];
+  } else {
+    itemData.metadata.priorities?.sort(defaultSort);
+  }
+
+  const configuredAssignees = stateManager.getSetting('assignee-options') as { label: string }[] | undefined;
+  if (configuredAssignees?.length && itemData.metadata.assignees?.length) {
+    const configuredLabels = configuredAssignees.map(a => a.label);
+    const configured = itemData.metadata.assignees.filter(a => configuredLabels.includes(a));
+    const remaining = itemData.metadata.assignees.filter(a => !configuredLabels.includes(a)).sort(defaultSort);
+    // 按配置顺序排列已配置的，未配置的按字母排序排在后面
+    itemData.metadata.assignees = [
+      ...configured.sort((a, b) => configuredLabels.indexOf(a) - configuredLabels.indexOf(b)),
+      ...remaining,
+    ];
+  } else {
+    itemData.metadata.assignees?.sort(defaultSort);
+  }
 
   return itemData;
 }

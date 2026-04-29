@@ -104,6 +104,12 @@ const en = {
   'Move tags to card footer': 'Move tags to card footer',
   "When toggled, tags will be displayed in the card's footer instead of the card's body.":
     "When toggled, tags will be displayed in the card's footer instead of the card's body.",
+  'Move priorities to card footer': 'Move priorities to card footer',
+  "When toggled, priorities will be displayed in the card's footer instead of the card's body.":
+    "When toggled, priorities will be displayed in the card's footer instead of the card's body.",
+  'Move assignees to card footer': 'Move assignees to card footer',
+  "When toggled, assignees will be displayed in the card's footer instead of the card's body.":
+    "When toggled, assignees will be displayed in the card's footer instead of the card's body.",
   'Move task data to card footer': 'Move task data to card footer',
   "When toggled, task data (from the Tasks plugin) will be displayed in the card's footer instead of the card's body.":
     "When toggled, task data (from the Tasks plugin) will be displayed in the card's footer instead of the card's body.",

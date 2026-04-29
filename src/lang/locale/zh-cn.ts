@@ -69,6 +69,21 @@ const lang: Partial<Lang> = {
   'Display card checkbox': '展示卡片复选框',
   'When toggled, a checkbox will be displayed with each card': '打开时，复选框会出现在每张卡片上',
   'Reset to default': '还原初始设置',
+  'Move dates to card footer': '将日期移至卡片底部',
+  "When toggled, dates will be displayed in the card's footer instead of the card's body.":
+    '打开时，日期会显示在卡片底部而不是卡片主体中。',
+  'Move tags to card footer': '将标签移至卡片底部',
+  "When toggled, tags will be displayed in the card's footer instead of the card's body.":
+    '打开时，标签会显示在卡片底部而不是卡片主体中。',
+  'Move priorities to card footer': '将优先级移至卡片底部',
+  "When toggled, priorities will be displayed in the card's footer instead of the card's body.":
+    '打开时，优先级会显示在卡片底部而不是卡片主体中。',
+  'Move assignees to card footer': '将负责人移至卡片底部',
+  "When toggled, assignees will be displayed in the card's footer instead of the card's body.":
+    '打开时，负责人会显示在卡片底部而不是卡片主体中。',
+  'Move task data to card footer': '将任务数据移至卡片底部',
+  "When toggled, task data (from the Tasks plugin) will be displayed in the card's footer instead of the card's body.":
+    '打开时，任务数据（来自 Tasks 插件）会显示在卡片底部而不是卡片主体中。',
   'Date & Time': '日期和时间',
   'Date trigger': '日期触发指令',
   'When this is typed, it will trigger the date selector':
