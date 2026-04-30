@@ -51,8 +51,6 @@ interface TaskItem extends ListItem {
 export function listItemToItemData(stateManager: StateManager, md: string, item: TaskItem) {
   const moveTags = stateManager.getSetting('move-tags');
   const moveDates = stateManager.getSetting('move-dates');
-  const movePriorities = stateManager.getSetting('move-priorities');
-  const moveAssignees = stateManager.getSetting('move-assignees');
 
   const startNode = item.children.first();
   const endNode = item.children.last();
@@ -157,7 +155,7 @@ export function listItemToItemData(stateManager: StateManager, md: string, item:
 
         itemData.metadata.priorities.push(genericNode.value);
 
-        if (movePriorities) {
+        if (moveTags) {
           title = markRangeForDeletion(title, {
             start: node.position.start.offset - itemBoundary.start,
             end: node.position.end.offset - itemBoundary.start,
@@ -173,7 +171,7 @@ export function listItemToItemData(stateManager: StateManager, md: string, item:
 
         itemData.metadata.assignees.push(genericNode.value);
 
-        if (moveAssignees) {
+        if (moveTags) {
           title = markRangeForDeletion(title, {
             start: node.position.start.offset - itemBoundary.start,
             end: node.position.end.offset - itemBoundary.start,

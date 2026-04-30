@@ -119,7 +119,7 @@ export async function applyTemplate(stateManager: StateManager, templatePath?: s
     : null;
 
   if (templateFile && templateFile instanceof TFile) {
-    const activeView = app.workspace.getActiveViewOfType(MarkdownView);
+    const activeView = stateManager.app.workspace.getActiveViewOfType(MarkdownView);
 
     try {
       // Force the view to source mode, if needed
@@ -359,19 +359,39 @@ export function useSearchValue(
   query: string,
   setSearchQuery: Dispatch<StateUpdater<string>>,
   setDebouncedSearchQuery: Dispatch<StateUpdater<string>>,
-  setIsSearching: Dispatch<StateUpdater<boolean>>
+  setIsSearching: Dispatch<StateUpdater<boolean>>,
+  priorityFilters: Set<string>,
+  assigneeFilters: Set<string>,
+  setPriorityFilters: Dispatch<StateUpdater<Set<string>>>,
+  setAssigneeFilters: Dispatch<StateUpdater<Set<string>>>
 ) {
   return useMemo<SearchContextProps>(() => {
-    query = query.trim().toLocaleLowerCase();
+    const normalizedQuery = query.trim().toLocaleLowerCase();
+    const hasFilters = normalizedQuery.length > 0 || priorityFilters.size > 0 || assigneeFilters.size > 0;
 
     const lanes = new Set<Lane>();
     const items = new Set<Item>();
 
-    if (query) {
+    // When no filters, show all items
+    if (!hasFilters) {
+      board.children.forEach((lane) => {
+        lanes.add(lane);
+        lane.children.forEach((item) => {
+          items.add(item);
+        });
+      });
+    } else {
+      // Filter by search query AND priority/assignee filters
       board.children.forEach((lane) => {
         let laneMatched = false;
         lane.children.forEach((item) => {
-          if (item.data.titleSearch.includes(query)) {
+          let matchesSearch = !normalizedQuery || item.data.titleSearch.includes(normalizedQuery);
+          let matchesPriority = priorityFilters.size === 0 ||
+            (item.data.metadata.priorities?.some(p => priorityFilters.has(p)) ?? false);
+          let matchesAssignee = assigneeFilters.size === 0 ||
+            (item.data.metadata.assignees?.some(a => assigneeFilters.has(a)) ?? false);
+
+          if (matchesSearch && matchesPriority && matchesAssignee) {
             laneMatched = true;
             items.add(item);
           }
@@ -383,21 +403,27 @@ export function useSearchValue(
     return {
       lanes,
       items,
-      query,
-      search: (query, immediate) => {
-        if (!query) {
+      query: normalizedQuery,
+      hasFilters,
+      search: (newQuery, immediate) => {
+        if (!newQuery) {
           setIsSearching(false);
           setSearchQuery('');
           setDebouncedSearchQuery('');
-        }
-        setIsSearching(true);
-        if (immediate) {
-          setSearchQuery(query);
-          setDebouncedSearchQuery(query);
         } else {
-          setSearchQuery(query);
+          setIsSearching(true);
+          if (immediate) {
+            setSearchQuery(newQuery);
+            setDebouncedSearchQuery(newQuery);
+          } else {
+            setSearchQuery(newQuery);
+          }
         }
       },
+      priorityFilters,
+      assigneeFilters,
+      setPriorityFilters,
+      setAssigneeFilters,
     };
-  }, [board, query, setSearchQuery, setDebouncedSearchQuery]);
+  }, [board, query, setSearchQuery, setDebouncedSearchQuery, priorityFilters, assigneeFilters, setPriorityFilters, setAssigneeFilters]);
 }

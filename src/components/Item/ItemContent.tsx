@@ -201,8 +201,9 @@ export function Priorities({
   searchQuery?: string;
 }) {
   const { stateManager } = useContext(KanbanContext);
+  const search = useContext(SearchContext);
   const getPriorityColor = useGetLabelColorFn(stateManager, 'priority-options');
-  const shouldShow = stateManager.useSetting('move-priorities');
+  const shouldShow = stateManager.useSetting('move-tags'); // Share move-tags setting
 
   if (!priorities?.length || !shouldShow) return null;
 
@@ -217,6 +218,27 @@ export function Priorities({
             className={`tag ${c('item-tag')} ${c('item-priority')} ${
               searchQuery && priority.toLocaleLowerCase().contains(searchQuery) ? 'is-search-match' : ''
             }`}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const tagAction = stateManager.getSetting('tag-action');
+              if (search && tagAction === 'kanban') {
+                search.search('!' + priority, true);
+                return;
+              }
+              const searchPlugin = (stateManager.app as any).internalPlugins.getPluginById('global-search');
+              if (searchPlugin && searchPlugin.instance) {
+                searchPlugin.instance.openGlobalSearch();
+                // 直接设置搜索查询
+                setTimeout(() => {
+                  const searchInput = document.querySelector('.search-input-container input');
+                  if (searchInput) {
+                    (searchInput as HTMLInputElement).value = `!${priority}`;
+                    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+                  }
+                }, 50);
+              }
+            }}
             style={
               colorInfo && {
                 '--tag-color': colorInfo.color || '',
@@ -224,7 +246,15 @@ export function Priorities({
               }
             }
           >
-            !{priority}
+            <svg class={c('item-priority-icon')} xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+              <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+              <path d="M7 21h10" />
+              <path d="M12 3v18" />
+              <path d="M3 7h1c3 0 6-2 6-5" />
+              <path d="M20 7h-1c-3 0-6-2-6-5" />
+            </svg>
+            {priority}
           </a>
         );
       })}
@@ -240,8 +270,9 @@ export function Assignees({
   searchQuery?: string;
 }) {
   const { stateManager } = useContext(KanbanContext);
+  const search = useContext(SearchContext);
   const getAssigneeColor = useGetLabelColorFn(stateManager, 'assignee-options');
-  const shouldShow = stateManager.useSetting('move-assignees');
+  const shouldShow = stateManager.useSetting('move-tags'); // Share move-tags setting
 
   if (!assignees?.length || !shouldShow) return null;
 
@@ -256,6 +287,27 @@ export function Assignees({
             className={`tag ${c('item-tag')} ${c('item-assignee')} ${
               searchQuery && assignee.toLocaleLowerCase().contains(searchQuery) ? 'is-search-match' : ''
             }`}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const tagAction = stateManager.getSetting('tag-action');
+              if (search && tagAction === 'kanban') {
+                search.search('@' + assignee, true);
+                return;
+              }
+              const searchPlugin = (stateManager.app as any).internalPlugins.getPluginById('global-search');
+              if (searchPlugin && searchPlugin.instance) {
+                searchPlugin.instance.openGlobalSearch();
+                // 直接设置搜索查询
+                setTimeout(() => {
+                  const searchInput = document.querySelector('.search-input-container input');
+                  if (searchInput) {
+                    (searchInput as HTMLInputElement).value = `@${assignee}`;
+                    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+                  }
+                }, 50);
+              }
+            }}
             style={
               colorInfo && {
                 '--tag-color': colorInfo.color || '',
@@ -263,7 +315,11 @@ export function Assignees({
               }
             }
           >
-            @{assignee}
+            <svg class={c('item-assignee-icon')} xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+            {assignee}
           </a>
         );
       })}
@@ -386,6 +442,8 @@ export const ItemContent = memo(function ItemContent({
       )}
       {showMetadata && (
         <div className={c('item-metadata')}>
+          <Priorities priorities={item.data.metadata.priorities} searchQuery={searchQuery} />
+          <Assignees assignees={item.data.metadata.assignees} searchQuery={searchQuery} />
           <RelativeDate item={item} stateManager={stateManager} />
           <DateAndTime
             item={item}
@@ -394,8 +452,6 @@ export const ItemContent = memo(function ItemContent({
             getDateColor={getDateColor}
           />
           <InlineMetadata item={item} stateManager={stateManager} />
-          <Priorities priorities={item.data.metadata.priorities} searchQuery={searchQuery} />
-          <Assignees assignees={item.data.metadata.assignees} searchQuery={searchQuery} />
           <Tags tags={item.data.metadata.tags} searchQuery={searchQuery} />
         </div>
       )}

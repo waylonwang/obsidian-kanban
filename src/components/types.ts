@@ -125,6 +125,7 @@ export type TagSortSetting = Nestable<TagSort>;
 export type DateColorSetting = Nestable<DateColor>;
 export type PriorityOptionSetting = Nestable<PriorityOption>;
 export type AssigneeOptionSetting = Nestable<AssigneeOption>;
+export type LabelColorSetting = Nestable<PriorityOption>;
 
 export const DataTypes = {
   Item: 'item',
@@ -136,6 +137,7 @@ export const DataTypes = {
   DateColorSetting: 'date-color',
   PriorityOptionSetting: 'priority-option',
   AssigneeOptionSetting: 'assignee-option',
+  LabelColorSetting: 'label-color',
 };
 
 export const ItemTemplate = {
@@ -189,6 +191,12 @@ export const PriorityOptionSettingTemplate = {
 export const AssigneeOptionSettingTemplate = {
   accepts: [] as string[],
   type: DataTypes.AssigneeOptionSetting,
+  children: [] as any[],
+};
+
+export const LabelColorSettingTemplate = {
+  accepts: [] as string[],
+  type: DataTypes.LabelColorSetting,
   children: [] as any[],
 };
 

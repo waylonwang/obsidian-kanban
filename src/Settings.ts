@@ -78,8 +78,6 @@ export interface KanbanSettings {
   'metadata-keys'?: DataKey[];
   'move-dates'?: boolean;
   'move-tags'?: boolean;
-  'move-priorities'?: boolean;
-  'move-assignees'?: boolean;
   'move-task-metadata'?: boolean;
   'new-card-insertion-method'?: 'prepend' | 'prepend-compact' | 'append';
   'new-line-trigger'?: 'enter' | 'shift-enter';
@@ -130,8 +128,6 @@ export const settingKeyLookup: Set<keyof KanbanSettings> = new Set([
   'metadata-keys',
   'move-dates',
   'move-tags',
-  'move-priorities',
-  'move-assignees',
   'move-task-metadata',
   'new-card-insertion-method',
   'new-line-trigger',
@@ -488,48 +484,6 @@ export class SettingsManager {
     contentEl.createEl('h4', { text: t('Tags') });
 
     new Setting(contentEl)
-      .setName(t('Move tags to card footer'))
-      .setDesc(
-        t("When toggled, tags will be displayed in the card's footer instead of the card's body.")
-      )
-      .then((setting) => {
-        let toggleComponent: ToggleComponent;
-
-        setting
-          .addToggle((toggle) => {
-            toggleComponent = toggle;
-
-            const [value, globalValue] = this.getSetting('move-tags', local);
-
-            if (value !== undefined) {
-              toggle.setValue(value as boolean);
-            } else if (globalValue !== undefined) {
-              toggle.setValue(globalValue as boolean);
-            }
-
-            toggle.onChange((newValue) => {
-              this.applySettingsUpdate({
-                'move-tags': {
-                  $set: newValue,
-                },
-              });
-            });
-          })
-          .addExtraButton((b) => {
-            b.setIcon('lucide-rotate-ccw')
-              .setTooltip(t('Reset to default'))
-              .onClick(() => {
-                const [, globalValue] = this.getSetting('move-tags', local);
-                toggleComponent.setValue(!!globalValue);
-
-                this.applySettingsUpdate({
-                  $unset: ['move-tags'],
-                });
-              });
-          });
-      });
-
-    new Setting(contentEl)
       .setName(t('Tag click action'))
       .setDesc(
         t(
@@ -608,9 +562,9 @@ export class SettingsManager {
     contentEl.createEl('h4', { text: t('Priority & Assignee') });
 
     new Setting(contentEl)
-      .setName(t('Move priorities to card footer'))
+      .setName(t('Move priorities and assignees to card footer'))
       .setDesc(
-        t("When toggled, priorities will be displayed in the card's footer instead of the card's body.")
+        t("When toggled, priorities and assignees will be displayed in the card's footer instead of the card's body.")
       )
       .then((setting) => {
         let toggleComponent: ToggleComponent;
@@ -619,7 +573,7 @@ export class SettingsManager {
           .addToggle((toggle) => {
             toggleComponent = toggle;
 
-            const [value, globalValue] = this.getSetting('move-priorities', local);
+            const [value, globalValue] = this.getSetting('move-tags', local);
 
             if (value !== undefined) {
               toggle.setValue(value as boolean);
@@ -629,7 +583,7 @@ export class SettingsManager {
 
             toggle.onChange((newValue) => {
               this.applySettingsUpdate({
-                'move-priorities': {
+                'move-tags': {
                   $set: newValue,
                 },
               });
@@ -639,53 +593,11 @@ export class SettingsManager {
             b.setIcon('lucide-rotate-ccw')
               .setTooltip(t('Reset to default'))
               .onClick(() => {
-                const [, globalValue] = this.getSetting('move-priorities', local);
+                const [, globalValue] = this.getSetting('move-tags', local);
                 toggleComponent.setValue(!!globalValue);
 
                 this.applySettingsUpdate({
-                  $unset: ['move-priorities'],
-                });
-              });
-          });
-      });
-
-    new Setting(contentEl)
-      .setName(t('Move assignees to card footer'))
-      .setDesc(
-        t("When toggled, assignees will be displayed in the card's footer instead of the card's body.")
-      )
-      .then((setting) => {
-        let toggleComponent: ToggleComponent;
-
-        setting
-          .addToggle((toggle) => {
-            toggleComponent = toggle;
-
-            const [value, globalValue] = this.getSetting('move-assignees', local);
-
-            if (value !== undefined) {
-              toggle.setValue(value as boolean);
-            } else if (globalValue !== undefined) {
-              toggle.setValue(globalValue as boolean);
-            }
-
-            toggle.onChange((newValue) => {
-              this.applySettingsUpdate({
-                'move-assignees': {
-                  $set: newValue,
-                },
-              });
-            });
-          })
-          .addExtraButton((b) => {
-            b.setIcon('lucide-rotate-ccw')
-              .setTooltip(t('Reset to default'))
-              .onClick(() => {
-                const [, globalValue] = this.getSetting('move-assignees', local);
-                toggleComponent.setValue(!!globalValue);
-
-                this.applySettingsUpdate({
-                  $unset: ['move-assignees'],
+                  $unset: ['move-tags'],
                 });
               });
           });

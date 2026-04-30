@@ -36,6 +36,8 @@ const lang: Partial<Lang> = {
   'Note: No template plugins are currently enabled.': '注意：当前没有启用模板插件',
   default: '默认',
   'Search...': '搜索……',
+  'Filter by priority': '按优先级筛选',
+  'Filter by assignee': '按负责人筛选',
 
   // Settings.ts
   'New line trigger': '换行触发器',
@@ -81,6 +83,9 @@ const lang: Partial<Lang> = {
   'Move assignees to card footer': '将负责人移至卡片底部',
   "When toggled, assignees will be displayed in the card's footer instead of the card's body.":
     '打开时，负责人会显示在卡片底部而不是卡片主体中。',
+  'Move priorities and assignees to card footer': '将优先级和负责人移至卡片底部',
+  "When toggled, priorities and assignees will be displayed in the card's footer instead of the card's body.":
+    '打开时，优先级和负责人会显示在卡片底部而不是卡片主体中。',
   'Move task data to card footer': '将任务数据移至卡片底部',
   "When toggled, task data (from the Tasks plugin) will be displayed in the card's footer instead of the card's body.":
     '打开时，任务数据（来自 Tasks 插件）会显示在卡片底部而不是卡片主体中。',
@@ -136,6 +141,10 @@ const lang: Partial<Lang> = {
   Delete: '删除',
   'Add key': '添加参数名',
   'Field contains markdown': '字段包含 Markdown',
+
+  // Priority & Assignee
+  Priority: '优先级',
+  Assignee: '负责人',
 
   // components/Item/Item.tsx
   'More options': '更多选项',

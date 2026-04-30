@@ -110,6 +110,9 @@ const en = {
   'Move assignees to card footer': 'Move assignees to card footer',
   "When toggled, assignees will be displayed in the card's footer instead of the card's body.":
     "When toggled, assignees will be displayed in the card's footer instead of the card's body.",
+  'Move priorities and assignees to card footer': 'Move priorities and assignees to card footer',
+  "When toggled, priorities and assignees will be displayed in the card's footer instead of the card's body.":
+    "When toggled, priorities and assignees will be displayed in the card's footer instead of the card's body.",
   'Move task data to card footer': 'Move task data to card footer',
   "When toggled, task data (from the Tasks plugin) will be displayed in the card's footer instead of the card's body.":
     "When toggled, task data (from the Tasks plugin) will be displayed in the card's footer instead of the card's body.",
@@ -140,6 +143,8 @@ const en = {
   'Tag click action': 'Tag click action',
   'Search Kanban Board': 'Search Kanban Board',
   'Search Obsidian Vault': 'Search Obsidian Vault',
+  'Filter by priority': 'Filter by priority',
+  'Filter by assignee': 'Filter by assignee',
   'This setting controls whether clicking the tags displayed below the card title opens the Obsidian search or the Kanban board search.':
     'This setting controls whether clicking the tags displayed below the card title opens the Obsidian search or the Kanban board search.',
   'Tag colors': 'Tag colors',
@@ -195,6 +200,7 @@ const en = {
   Tags: 'Tags',
 
   Priority: 'Priority',
+  Assignee: 'Assignee',
   Start: 'Start',
   Created: 'Created',
   Scheduled: 'Scheduled',

@@ -1,6 +1,7 @@
 import animateScrollTo from 'animated-scroll-to';
 import classcat from 'classcat';
 import update from 'immutability-helper';
+import { Menu } from 'obsidian';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/compat';
 import { KanbanView } from 'src/KanbanView';
 import { StateManager } from 'src/StateManager';
@@ -54,7 +55,9 @@ export const Kanban = ({ view, stateManager }: KanbanProps) => {
   const searchRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('');
-  const [isSearching, setIsSearching] = useState<boolean>(false);
+  const [isSearching, setIsSearching] = useState<boolean>(true);
+  const [priorityFilters, setPriorityFilters] = useState<Set<string>>(new Set());
+  const [assigneeFilters, setAssigneeFilters] = useState<Set<string>>(new Set());
 
   const [isLaneFormVisible, setIsLaneFormVisible] = useState<boolean>(
     boardData?.children.length === 0
@@ -207,7 +210,11 @@ export const Kanban = ({ view, stateManager }: KanbanProps) => {
     debouncedSearchQuery,
     setSearchQuery,
     setDebouncedSearchQuery,
-    setIsSearching
+    setIsSearching,
+    priorityFilters,
+    assigneeFilters,
+    setPriorityFilters,
+    setAssigneeFilters
   );
 
   return (
@@ -230,35 +237,136 @@ export const Kanban = ({ view, stateManager }: KanbanProps) => {
             )}
             {isSearching && (
               <div className={c('search-wrapper')}>
-                <input
-                  ref={searchRef}
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery((e.target as HTMLInputElement).value);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape') {
-                      setSearchQuery('');
-                      setDebouncedSearchQuery('');
-                      (e.target as HTMLInputElement).blur();
-                      setIsSearching(false);
-                    }
-                  }}
-                  type="text"
-                  className={c('filter-input')}
-                  placeholder={t('Search...')}
-                />
-                <a
-                  className={`${c('search-cancel-button')} clickable-icon`}
-                  onClick={() => {
-                    setSearchQuery('');
-                    setDebouncedSearchQuery('');
-                    setIsSearching(false);
-                  }}
-                  aria-label={t('Cancel')}
-                >
-                  <Icon name="lucide-x" />
-                </a>
+                {/* Priority filter dropdown */}
+                {(() => {
+                  const priorityOptions = stateManager.getSetting('priority-options') || [];
+                  if (priorityOptions.length === 0) return null;
+                  const selectedLabels = Array.from(priorityFilters);
+                  const displayText = selectedLabels.length > 0
+                    ? selectedLabels.join(', ')
+                    : t('Priority');
+                  return (
+                    <div className={`${c('filter-select-wrapper')} ${c('filter-select-wrapper-priority')}`}>
+                      <a
+                        className={`${c('filter-select')} clickable-icon`}
+                        onClick={(evt) => {
+                          const menu = new Menu();
+                          priorityOptions.forEach((opt: any) => {
+                            const isSelected = priorityFilters.has(opt.label);
+                            menu.addItem((item) =>
+                              item
+                                .setTitle(opt.label)
+                                .setChecked(isSelected)
+                                .onClick(() => {
+                                  const newFilters = new Set(priorityFilters);
+                                  if (isSelected) {
+                                    newFilters.delete(opt.label);
+                                  } else {
+                                    newFilters.add(opt.label);
+                                  }
+                                  setPriorityFilters(newFilters);
+                                })
+                            );
+                          });
+                          menu.showAtMouseEvent(evt as any);
+                        }}
+                      >
+                        <span className={c('filter-select-icon')}>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h1c3 0 6-2 6-5"/><path d="M20 7h-1c-3 0-6-2-6-5"/></svg>
+                        </span>
+                        <span className={c('filter-select-text')}>{displayText}</span>
+                      </a>
+                      {priorityFilters.size > 0 && (
+                        <a
+                          className={`${c('filter-select-clear')} clickable-icon`}
+                          onClick={() => setPriorityFilters(new Set())}
+                        >
+                          <Icon name="lucide-x" />
+                        </a>
+                      )}
+                    </div>
+                  );
+                })()}
+                {/* Assignee filter dropdown */}
+                {(() => {
+                  const assigneeOptions = stateManager.getSetting('assignee-options') || [];
+                  if (assigneeOptions.length === 0) return null;
+                  const selectedLabels = Array.from(assigneeFilters);
+                  const displayText = selectedLabels.length > 0
+                    ? selectedLabels.join(', ')
+                    : t('Assignee');
+                  return (
+                    <div className={`${c('filter-select-wrapper')} ${c('filter-select-wrapper-assignee')}`}>
+                      <a
+                        className={`${c('filter-select')} clickable-icon`}
+                        onClick={(evt) => {
+                          const menu = new Menu();
+                          assigneeOptions.forEach((opt: any) => {
+                            const isSelected = assigneeFilters.has(opt.label);
+                            menu.addItem((item) =>
+                              item
+                                .setTitle(opt.label)
+                                .setChecked(isSelected)
+                                .onClick(() => {
+                                  const newFilters = new Set(assigneeFilters);
+                                  if (isSelected) {
+                                    newFilters.delete(opt.label);
+                                  } else {
+                                    newFilters.add(opt.label);
+                                  }
+                                  setAssigneeFilters(newFilters);
+                                })
+                            );
+                          });
+                          menu.showAtMouseEvent(evt as any);
+                        }}
+                      >
+                        <span className={c('filter-select-icon')}>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        </span>
+                        <span className={c('filter-select-text')}>{displayText}</span>
+                      </a>
+                      {assigneeFilters.size > 0 && (
+                        <a
+                          className={`${c('filter-select-clear')} clickable-icon`}
+                          onClick={() => setAssigneeFilters(new Set())}
+                        >
+                          <Icon name="lucide-x" />
+                        </a>
+                      )}
+                    </div>
+                  );
+                })()}
+                <div className={c('filter-input-wrapper')}>
+                  <input
+                    ref={searchRef}
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery((e.target as HTMLInputElement).value);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') {
+                        setSearchQuery('');
+                        setDebouncedSearchQuery('');
+                        (e.target as HTMLInputElement).blur();
+                      }
+                    }}
+                    type="text"
+                    className={c('filter-input')}
+                    placeholder={t('Search...')}
+                  />
+                  {searchQuery && (
+                    <a
+                      className={`${c('filter-input-clear')} clickable-icon`}
+                      onClick={() => {
+                        setSearchQuery('');
+                        setDebouncedSearchQuery('');
+                      }}
+                    >
+                      <Icon name="lucide-x" />
+                    </a>
+                  )}
+                </div>
               </div>
             )}
             {boardView === 'table' ? (
