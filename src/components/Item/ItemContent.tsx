@@ -203,7 +203,7 @@ export function Priorities({
   const { stateManager } = useContext(KanbanContext);
   const search = useContext(SearchContext);
   const getPriorityColor = useGetLabelColorFn(stateManager, 'priority-options');
-  const shouldShow = stateManager.useSetting('move-tags'); // Share move-tags setting
+  const shouldShow = stateManager.useSetting('move-priorities-assignees');
 
   if (!priorities?.length || !shouldShow) return null;
 
@@ -272,7 +272,7 @@ export function Assignees({
   const { stateManager } = useContext(KanbanContext);
   const search = useContext(SearchContext);
   const getAssigneeColor = useGetLabelColorFn(stateManager, 'assignee-options');
-  const shouldShow = stateManager.useSetting('move-tags'); // Share move-tags setting
+  const shouldShow = stateManager.useSetting('move-priorities-assignees');
 
   if (!assignees?.length || !shouldShow) return null;
 

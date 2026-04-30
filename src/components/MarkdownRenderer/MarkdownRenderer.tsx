@@ -55,6 +55,162 @@ function colorizeDates(wrapperEl: HTMLElement, getDateColor: (date: moment.Momen
   });
 }
 
+function colorizePrioritiesAndAssignees(
+  wrapperEl: HTMLElement,
+  stateManager: { getSetting: (key: string) => any }
+) {
+  if (!wrapperEl) return;
+
+  // Don't process if move-priorities-assignees is enabled (priorities/assignees are in footer)
+  if (stateManager.getSetting('move-priorities-assignees')) return;
+
+  const priorityOptions = stateManager.getSetting('priority-options') as
+    | { label: string; color?: string; backgroundColor?: string }[]
+    | undefined;
+  const assigneeOptions = stateManager.getSetting('assignee-options') as
+    | { label: string; color?: string; backgroundColor?: string }[]
+    | undefined;
+
+  // Walk through text nodes and replace !priority/@assignee with styled spans
+  const walker = document.createTreeWalker(wrapperEl, NodeFilter.SHOW_TEXT, null);
+  const textNodes: Text[] = [];
+
+  while (walker.nextNode()) {
+    textNodes.push(walker.currentNode as Text);
+  }
+
+  for (const textNode of textNodes) {
+    const text = textNode.textContent;
+    if (!text) continue;
+
+    // Match !xxx pattern (priority) - \S+ matches any non-whitespace including Chinese
+    const priorityRegex = /!(\S+)/g;
+    // Match @xxx pattern (assignee)
+    const assigneeRegex = /@(\S+)/g;
+
+    let hasMatch = false;
+    const fragments: { text: string; isPriority?: string; isAssignee?: string }[] = [];
+    let lastIndex = 0;
+
+    // Find all matches
+    const matches: { index: number; endIndex: number; type: 'priority' | 'assignee'; value: string }[] = [];
+
+    let match;
+    while ((match = priorityRegex.exec(text)) !== null) {
+      matches.push({ index: match.index, endIndex: match.index + match[0].length, type: 'priority', value: match[1] });
+      hasMatch = true;
+    }
+    while ((match = assigneeRegex.exec(text)) !== null) {
+      matches.push({ index: match.index, endIndex: match.index + match[0].length, type: 'assignee', value: match[1] });
+      hasMatch = true;
+    }
+
+    if (!hasMatch) continue;
+
+    // Sort matches by index
+    matches.sort((a, b) => a.index - b.index);
+
+    // Build fragments
+    for (const m of matches) {
+      if (m.index > lastIndex) {
+        fragments.push({ text: text.slice(lastIndex, m.index) });
+      }
+      if (m.type === 'priority') {
+        fragments.push({ text: '!' + m.value, isPriority: m.value });
+      } else {
+        fragments.push({ text: '@' + m.value, isAssignee: m.value });
+      }
+      lastIndex = m.endIndex;
+    }
+    if (lastIndex < text.length) {
+      fragments.push({ text: text.slice(lastIndex) });
+    }
+
+    // Replace text node with styled spans
+    const parent = textNode.parentNode;
+    if (!parent) continue;
+
+    for (const frag of fragments) {
+      if (frag.isPriority) {
+        const option = priorityOptions?.find((o) => o.label === frag.isPriority);
+        const a = document.createElement('a');
+        a.className = `tag ${c('item-tag')} ${c('item-priority')}`;
+        a.href = '#' + frag.isPriority;
+        if (option) {
+          a.style.setProperty('--tag-color', option.color || '');
+          a.style.setProperty('--tag-background', option.backgroundColor || '');
+        }
+        // Add priority icon
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', c('item-priority-icon'));
+        svg.setAttribute('width', '12');
+        svg.setAttribute('height', '12');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('stroke', 'currentColor');
+        svg.setAttribute('stroke-width', '2');
+        svg.setAttribute('stroke-linecap', 'round');
+        svg.setAttribute('stroke-linejoin', 'round');
+        const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path1.setAttribute('d', 'm16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z');
+        const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path2.setAttribute('d', 'm2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z');
+        const path3 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path3.setAttribute('d', 'M7 21h10');
+        const path4 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path4.setAttribute('d', 'M12 3v18');
+        const path5 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path5.setAttribute('d', 'M3 7h1c3 0 6-2 6-5');
+        const path6 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path6.setAttribute('d', 'M20 7h-1c-3 0-6-2-6-5');
+        svg.appendChild(path1);
+        svg.appendChild(path2);
+        svg.appendChild(path3);
+        svg.appendChild(path4);
+        svg.appendChild(path5);
+        svg.appendChild(path6);
+        a.appendChild(svg);
+        a.appendChild(document.createTextNode(frag.isPriority));
+        parent.insertBefore(a, textNode);
+      } else if (frag.isAssignee) {
+        const option = assigneeOptions?.find((o) => o.label === frag.isAssignee);
+        const a = document.createElement('a');
+        a.className = `tag ${c('item-tag')} ${c('item-assignee')}`;
+        a.href = '#' + frag.isAssignee;
+        if (option) {
+          a.style.setProperty('--tag-color', option.color || '');
+          a.style.setProperty('--tag-background', option.backgroundColor || '');
+        }
+        // Add assignee icon
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', c('item-assignee-icon'));
+        svg.setAttribute('width', '12');
+        svg.setAttribute('height', '12');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('stroke', 'currentColor');
+        svg.setAttribute('stroke-width', '2');
+        svg.setAttribute('stroke-linecap', 'round');
+        svg.setAttribute('stroke-linejoin', 'round');
+        const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path1.setAttribute('d', 'M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2');
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', '12');
+        circle.setAttribute('cy', '7');
+        circle.setAttribute('r', '4');
+        svg.appendChild(path1);
+        svg.appendChild(circle);
+        a.appendChild(svg);
+        a.appendChild(document.createTextNode(frag.isAssignee));
+        parent.insertBefore(a, textNode);
+      } else {
+        parent.insertBefore(document.createTextNode(frag.text), textNode);
+      }
+    }
+    parent.removeChild(textNode);
+  }
+}
+
 export class BasicMarkdownRenderer extends Component {
   containerEl: HTMLElement;
   wrapperEl: HTMLElement;
@@ -299,6 +455,7 @@ export const MarkdownRenderer = memo(function MarkdownPreviewRenderer({
     elRef.current.append(preview.containerEl);
     colorizeTags(elRef.current, getTagColor);
     colorizeDates(elRef.current, getDateColor);
+    colorizePrioritiesAndAssignees(elRef.current, stateManager);
 
     entityManager?.emitter.on('visibility-change', onVisibilityChange);
 
@@ -319,6 +476,7 @@ export const MarkdownRenderer = memo(function MarkdownPreviewRenderer({
     preview.renderCapability.promise.then(() => {
       colorizeTags(elRef.current, getTagColor);
       colorizeDates(elRef.current, getDateColor);
+      colorizePrioritiesAndAssignees(elRef.current, stateManager);
     });
   }, [markdownString]);
 
@@ -326,6 +484,7 @@ export const MarkdownRenderer = memo(function MarkdownPreviewRenderer({
     if (!renderer.current) return;
     colorizeTags(elRef.current, getTagColor);
     colorizeDates(elRef.current, getDateColor);
+    colorizePrioritiesAndAssignees(elRef.current, stateManager);
   }, [getTagColor, getDateColor]);
 
   useEffect(() => {

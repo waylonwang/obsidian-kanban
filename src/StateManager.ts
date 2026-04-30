@@ -243,6 +243,7 @@ export class StateManager {
       'link-date-to-daily-note': this.getSettingRaw('link-date-to-daily-note', suppliedSettings),
       'move-dates': this.getSettingRaw('move-dates', suppliedSettings),
       'move-tags': this.getSettingRaw('move-tags', suppliedSettings),
+      'move-priorities-assignees': this.getSettingRaw('move-priorities-assignees', suppliedSettings),
       'move-task-metadata': this.getSettingRaw('move-task-metadata', suppliedSettings),
       'metadata-keys': metadataKeys,
       'archive-date-separator': this.getSettingRaw('archive-date-separator') || '',
