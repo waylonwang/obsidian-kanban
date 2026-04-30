@@ -204,7 +204,7 @@ export const Kanban = ({ view, stateManager }: KanbanProps) => {
     );
   }
 
-  const axis = boardView === 'list' ? 'vertical' : 'horizontal';
+  const axis = boardView === 'list' || boardView === 'waterfall' ? 'vertical' : 'horizontal';
   const searchValue = useSearchValue(
     boardData,
     debouncedSearchQuery,
@@ -377,14 +377,15 @@ export const Kanban = ({ view, stateManager }: KanbanProps) => {
                 className={classcat([
                   c('board'),
                   {
-                    [c('horizontal')]: boardView !== 'list',
-                    [c('vertical')]: boardView === 'list',
+                    [c('horizontal')]: boardView !== 'list' && boardView !== 'waterfall',
+                    [c('vertical')]: boardView === 'list' || boardView === 'waterfall',
+                    [c('waterfall')]: boardView === 'waterfall',
                     'is-adding-lane': isLaneFormVisible,
                   },
                 ])}
                 triggerTypes={boardScrollTiggers}
               >
-                <div>
+                <div className={boardView === 'waterfall' ? c('waterfall-container') : ''}>
                   <Sortable axis={axis}>
                     <Lanes lanes={boardData.children} collapseDir={axis} />
                     <SortPlaceholder

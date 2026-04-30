@@ -50,12 +50,15 @@ function DraggableLaneRaw({
   const laneWidth = stateManager.useSetting('lane-width');
   const fullWidth = boardView === 'list' && stateManager.useSetting('full-list-lane-width');
   const insertionMethod = stateManager.useSetting('new-card-insertion-method');
+  // 瀑布流视图不设置宽度，由 CSS columns 控制
   const laneStyles = useMemo(
-    () =>
-      !(isCollapsed && collapseDir === 'horizontal') && (fullWidth || laneWidth)
+    () => {
+      if (boardView === 'waterfall') return undefined;
+      return !(isCollapsed && collapseDir === 'horizontal') && (fullWidth || laneWidth)
         ? { width: fullWidth ? '100%' : `${laneWidth}px` }
-        : undefined,
-    [fullWidth, laneWidth, isCollapsed]
+        : undefined;
+    },
+    [fullWidth, laneWidth, isCollapsed, boardView]
   );
 
   const elementRef = useRef<HTMLDivElement>(null);

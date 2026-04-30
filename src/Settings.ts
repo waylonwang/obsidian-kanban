@@ -54,7 +54,7 @@ import { cleanUpLabelColorSettings, renderLabelColorSettings } from './settings/
 
 const numberRegEx = /^\d+(?:\.\d+)?$/;
 
-export type KanbanFormat = 'basic' | 'board' | 'table' | 'list';
+export type KanbanFormat = 'basic' | 'board' | 'table' | 'list' | 'waterfall';
 
 export interface KanbanSettings {
   [frontmatterKey]?: KanbanFormat;

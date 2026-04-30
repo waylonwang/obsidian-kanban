@@ -14,6 +14,11 @@ const lang: Partial<Lang> = {
   'Untitled Kanban': '未命名看板',
   'Toggle between Kanban and markdown mode': '在看板和 Markdown 模式之间进行切换',
 
+  'View as board': '看板视图',
+  'View as list': '列表视图',
+  'View as table': '表格视图',
+  'View as waterfall': '瀑布流视图',
+
   // KanbanView.tsx
   'Open as markdown': '打开为 Markdown 文件',
   'Open board settings': '打开看板设置',
