@@ -431,6 +431,7 @@
   .kanban-plugin__vertical & {
     margin-block-end: 10px;
     margin-inline-end: 0;
+    width: 100%;
   }
 }
 
@@ -538,16 +539,11 @@ button.kanban-plugin__lane-action-add {
   width: auto;
 
   .kanban-plugin__lane-header-wrapper {
-    writing-mode: vertical-lr;
+    writing-mode: vertical-rl;
   }
 
   .kanban-plugin__lane-header-wrapper {
     gap: var(--size-4-2);
-  }
-
-  .kanban-plugin__lane-title-count,
-  .kanban-plugin__lane-title-text {
-    transform: rotate(180deg);
   }
 
   .kanban-plugin__lane-settings-button-wrapper {
@@ -1383,6 +1379,10 @@ button.kanban-plugin__cancel-action-button {
   font-size: 12px;
 }
 
+.kanban-plugin__filter-select {
+  text-decoration: none;
+}
+
 .kanban-plugin__date-picker {
   position: absolute;
   z-index: var(--layer-popover);
@@ -1825,6 +1825,11 @@ body:not(.native-scrollbars) .kanban-plugin__scroll-container::-webkit-scrollbar
   height: 16px;
 }
 
+body:not(.native-scrollbars)
+  .kanban-plugin__scroll-container.kanban-plugin__vertical::-webkit-scrollbar {
+  display: none;
+}
+
 body:not(.native-scrollbars) .kanban-plugin__scroll-container::-webkit-scrollbar-thumb {
   border: 4px solid transparent;
   background-clip: content-box;
@@ -1842,6 +1847,7 @@ body:not(.native-scrollbars) .kanban-plugin__scroll-container::-webkit-scrollbar
 .kanban-plugin__scroll-container.kanban-plugin__vertical {
   overflow-y: auto;
   overflow-x: hidden;
+  scrollbar-width: none;
 }
 
 .kanban-plugin__drag-container {
