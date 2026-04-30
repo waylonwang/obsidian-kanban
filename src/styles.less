@@ -239,26 +239,124 @@
   padding-block: 10px;
   padding-inline: 13px;
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   align-items: center;
+  gap: 8px;
   z-index: 2;
   background-color: var(--background-primary);
 }
 
-button.kanban-plugin__search-cancel-button {
+.kanban-plugin__filter-select-wrapper {
   display: flex;
-  line-height: 1;
-  padding: 6px;
+  align-items: center;
   border: 1px solid var(--background-modifier-border);
   background: var(--background-secondary-alt);
-  color: var(--text-muted);
-  margin-block: 0;
-  margin-inline: 5px 0;
-  font-size: 16px;
+  border-radius: var(--radius-s);
+  position: relative;
 }
 
-button.kanban-plugin__search-cancel-button .kanban-plugin__icon {
+.kanban-plugin__filter-select-wrapper-priority {
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+  flex-shrink: 0;
+}
+
+.kanban-plugin__filter-select-wrapper-assignee {
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
+  flex-shrink: 0;
+}
+
+.kanban-plugin__filter-select {
   display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  padding-block: 6px;
+  padding-inline: 4px 24px;
+  font-size: 14px;
+  cursor: pointer;
+  flex: 1;
+
+  &:hover {
+    background: var(--background-secondary);
+  }
+}
+
+.kanban-plugin__filter-select-icon {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+}
+
+.kanban-plugin__filter-select-text {
+  color: var(--text-normal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-decoration: none;
+  max-width: 130px;
+}
+
+.kanban-plugin__filter-select-clear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  color: var(--text-muted);
+  cursor: pointer;
+  z-index: 1;
+
+  &:hover {
+    color: var(--text-normal);
+  }
+}
+
+.kanban-plugin__filter-input-wrapper {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  border-radius: var(--radius-s);
+  flex: 1;
+  min-width: 100px;
+  position: relative;
+}
+
+.kanban-plugin__filter-input {
+  flex: 1;
+  padding-block: 6px;
+  padding-inline: 8px 24px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  min-width: 50px;
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.kanban-plugin__filter-input-clear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  color: var(--text-muted);
+  cursor: pointer;
+  z-index: 1;
+
+  &:hover {
+    color: var(--text-normal);
+  }
 }
 
 .kanban-plugin__icon {
@@ -1237,6 +1335,29 @@ button.kanban-plugin__cancel-action-button {
   border-color: var(--background-modifier-error-hover) !important;
 }
 
+// Priority and assignee icon styles in cards
+.kanban-plugin__item-priority-icon,
+.kanban-plugin__item-assignee-icon {
+  display: inline-flex;
+  align-items: center;
+  margin-inline-end: 4px;
+  color: var(--tag-color, var(--text-accent));
+}
+
+.kanban-plugin__item-priorities,
+.kanban-plugin__item-assignees {
+  display: inline;
+}
+
+.kanban-plugin__item-priority,
+.kanban-plugin__item-assignee {
+  display: inline-flex;
+  align-items: center;
+  margin-block: 3px 0;
+  margin-inline: 0 3px;
+  font-size: 12px;
+}
+
 .kanban-plugin__date-picker {
   position: absolute;
   z-index: var(--layer-popover);
@@ -1568,7 +1689,8 @@ button.kanban-plugin__cancel-action-button {
 
 .kanban-plugin__date-color-input-wrapper,
 .kanban-plugin__tag-sort-input-wrapper,
-.kanban-plugin__tag-color-input-wrapper {
+.kanban-plugin__tag-color-input-wrapper,
+.kanban-plugin__label-color-input-wrapper {
   display: flex;
   flex-direction: column;
   flex-grow: 1;

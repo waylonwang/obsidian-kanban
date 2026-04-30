@@ -104,6 +104,15 @@ const en = {
   'Move tags to card footer': 'Move tags to card footer',
   "When toggled, tags will be displayed in the card's footer instead of the card's body.":
     "When toggled, tags will be displayed in the card's footer instead of the card's body.",
+  'Move priorities to card footer': 'Move priorities to card footer',
+  "When toggled, priorities will be displayed in the card's footer instead of the card's body.":
+    "When toggled, priorities will be displayed in the card's footer instead of the card's body.",
+  'Move assignees to card footer': 'Move assignees to card footer',
+  "When toggled, assignees will be displayed in the card's footer instead of the card's body.":
+    "When toggled, assignees will be displayed in the card's footer instead of the card's body.",
+  'Move priorities and assignees to card footer': 'Move priorities and assignees to card footer',
+  "When toggled, priorities and assignees will be displayed in the card's footer instead of the card's body.":
+    "When toggled, priorities and assignees will be displayed in the card's footer instead of the card's body.",
   'Move task data to card footer': 'Move task data to card footer',
   "When toggled, task data (from the Tasks plugin) will be displayed in the card's footer instead of the card's body.":
     "When toggled, task data (from the Tasks plugin) will be displayed in the card's footer instead of the card's body.",
@@ -134,6 +143,8 @@ const en = {
   'Tag click action': 'Tag click action',
   'Search Kanban Board': 'Search Kanban Board',
   'Search Obsidian Vault': 'Search Obsidian Vault',
+  'Filter by priority': 'Filter by priority',
+  'Filter by assignee': 'Filter by assignee',
   'This setting controls whether clicking the tags displayed below the card title opens the Obsidian search or the Kanban board search.':
     'This setting controls whether clicking the tags displayed below the card title opens the Obsidian search or the Kanban board search.',
   'Tag colors': 'Tag colors',
@@ -189,6 +200,7 @@ const en = {
   Tags: 'Tags',
 
   Priority: 'Priority',
+  Assignee: 'Assignee',
   Start: 'Start',
   Created: 'Created',
   Scheduled: 'Scheduled',
@@ -274,6 +286,18 @@ const en = {
   'Sort by date': 'Sort by date',
   'Sort by tags': 'Sort by tags',
   'Sort by': 'Sort by',
+
+  // Priority & Assignee settings
+  'Priority & Assignee': 'Priority & Assignee',
+  'Priority options': 'Priority options',
+  'Predefined priority options for ! trigger. Enter comma-separated values.': 'Predefined priority options for ! trigger. Enter comma-separated values.',
+  'Assignee options': 'Assignee options',
+  'Predefined assignee options for @ trigger. Enter comma-separated values.': 'Predefined assignee options for @ trigger. Enter comma-separated values.',
+  'Label': 'Label',
+  'Add priority': 'Add priority',
+  'Add assignee': 'Add assignee',
+  'Set colors for priority options displayed in cards.': 'Set colors for priority options displayed in cards.',
+  'Set colors for assignee options displayed in cards.': 'Set colors for assignee options displayed in cards.',
 
   // components/helpers/renderMarkdown.ts
   'Unable to find': 'Unable to find',

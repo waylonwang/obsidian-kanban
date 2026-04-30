@@ -20,6 +20,11 @@ export interface SearchContextProps {
   items: Set<Item>;
   lanes: Set<Lane>;
   search: (query: string, immediate?: boolean) => void;
+  priorityFilters: Set<string>;
+  assigneeFilters: Set<string>;
+  setPriorityFilters: (filters: Set<string>) => void;
+  setAssigneeFilters: (filters: Set<string>) => void;
+  hasFilters: boolean;
 }
 
 export const SearchContext = createContext<SearchContextProps | null>(null);

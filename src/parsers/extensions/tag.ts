@@ -54,40 +54,25 @@ export function tagExtension(): Extension {
     function consumeTarget(code: number) {
       const char = String.fromCharCode(code);
 
-      // 当还未消费任何内容字符时（第一个字符），允许 ! 和 @ 作为特殊前缀
-      // 用于表示优先级（#!高）和负责人（#@张三）
-      if (!data) {
-        if (code === null || markdownLineEndingOrSpace(code)) {
-          return nok(code);
-        }
-        if (char === '!' || char === '@') {
-          data = true;
-          effects.consume(code);
-          return consumeTarget;
-        }
-        // 其他终止字符在第一个位置仍然不允许
-        if (
-          /[\u2000-\u206F\u2E00-\u2E7F'"#$%&()*+,.:;<=>?^`{|}~[\]\\\s\n\r]/.test(char)
-        ) {
-          return nok(code);
-        }
-      } else {
-        // 已消费内容字符后，所有终止字符（包括 ! 和 @）都会终止标签
-        if (
-          code === null ||
-          markdownLineEndingOrSpace(code) ||
-          /[\u2000-\u206F\u2E00-\u2E7F'!"#$%&()*+,.:;<=>?@^`{|}~[\]\\\s\n\r]/.test(char)
-        ) {
-          effects.exit(`${name}Target` as any);
-          effects.exit(`${name}Data` as any);
-          effects.exit(name as any);
-          return ok(code);
-        }
+      if (code === null || markdownLineEndingOrSpace(code)) {
+        if (!data) return nok(code);
+        effects.exit(`${name}Target` as any);
+        effects.exit(`${name}Data` as any);
+        effects.exit(name as any);
+        return ok(code);
+      }
+
+      // 终止字符
+      if (/[\u2000-\u206F\u2E00-\u2E7F'"#$%&()*+,.:;<=>?^`{|}~[\]\\\s\n\r]/.test(char)) {
+        if (!data) return nok(code);
+        effects.exit(`${name}Target` as any);
+        effects.exit(`${name}Data` as any);
+        effects.exit(name as any);
+        return ok(code);
       }
 
       data = true;
       effects.consume(code);
-
       return consumeTarget;
     }
   }

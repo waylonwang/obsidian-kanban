@@ -77,12 +77,16 @@ export function listItemToItemData(stateManager: StateManager, md: string, item:
 
   visit(
     item,
-    ['text', 'wikilink', 'embedWikilink', 'image', 'inlineCode', 'code', 'hashtag'],
+    ['text', 'wikilink', 'embedWikilink', 'image', 'inlineCode', 'code', 'hashtag', 'priority', 'assignee'],
     (node: any, i, parent) => {
       if (node.type === 'hashtag') {
         if (!parent.children.first()?.value?.startsWith('```')) {
           titleSearch += ' #' + node.value;
         }
+      } else if (node.type === 'priority') {
+        titleSearch += ' !' + node.value;
+      } else if (node.type === 'assignee') {
+        titleSearch += ' @' + node.value;
       } else {
         titleSearch += node.value || node.alt || '';
       }
@@ -101,6 +105,8 @@ export function listItemToItemData(stateManager: StateManager, md: string, item:
       time: undefined,
       timeStr: undefined,
       tags: [],
+      priorities: [],
+      assignees: [],
       fileAccessor: undefined,
       file: undefined,
       fileMetadata: undefined,
@@ -132,6 +138,38 @@ export function listItemToItemData(stateManager: StateManager, md: string, item:
         }
 
         itemData.metadata.tags.push('#' + genericNode.value);
+
+        if (moveTags) {
+          title = markRangeForDeletion(title, {
+            start: node.position.start.offset - itemBoundary.start,
+            end: node.position.end.offset - itemBoundary.start,
+          });
+        }
+        return true;
+      }
+
+      if (genericNode.type === 'priority') {
+        if (!itemData.metadata.priorities) {
+          itemData.metadata.priorities = [];
+        }
+
+        itemData.metadata.priorities.push(genericNode.value);
+
+        if (moveTags) {
+          title = markRangeForDeletion(title, {
+            start: node.position.start.offset - itemBoundary.start,
+            end: node.position.end.offset - itemBoundary.start,
+          });
+        }
+        return true;
+      }
+
+      if (genericNode.type === 'assignee') {
+        if (!itemData.metadata.assignees) {
+          itemData.metadata.assignees = [];
+        }
+
+        itemData.metadata.assignees.push(genericNode.value);
 
         if (moveTags) {
           title = markRangeForDeletion(title, {
@@ -223,6 +261,35 @@ export function listItemToItemData(stateManager: StateManager, md: string, item:
   }
 
   itemData.metadata.tags?.sort(defaultSort);
+
+  // 优先级和负责人按配置列表顺序排序，未配置的按字母排序排在后面
+  const configuredPriorities = stateManager.getSetting('priority-options') as { label: string }[] | undefined;
+  if (configuredPriorities?.length && itemData.metadata.priorities?.length) {
+    const configuredLabels = configuredPriorities.map(p => p.label);
+    const configured = itemData.metadata.priorities.filter(p => configuredLabels.includes(p));
+    const remaining = itemData.metadata.priorities.filter(p => !configuredLabels.includes(p)).sort(defaultSort);
+    // 按配置顺序排列已配置的，未配置的按字母排序排在后面
+    itemData.metadata.priorities = [
+      ...configured.sort((a, b) => configuredLabels.indexOf(a) - configuredLabels.indexOf(b)),
+      ...remaining,
+    ];
+  } else {
+    itemData.metadata.priorities?.sort(defaultSort);
+  }
+
+  const configuredAssignees = stateManager.getSetting('assignee-options') as { label: string }[] | undefined;
+  if (configuredAssignees?.length && itemData.metadata.assignees?.length) {
+    const configuredLabels = configuredAssignees.map(a => a.label);
+    const configured = itemData.metadata.assignees.filter(a => configuredLabels.includes(a));
+    const remaining = itemData.metadata.assignees.filter(a => !configuredLabels.includes(a)).sort(defaultSort);
+    // 按配置顺序排列已配置的，未配置的按字母排序排在后面
+    itemData.metadata.assignees = [
+      ...configured.sort((a, b) => configuredLabels.indexOf(a) - configuredLabels.indexOf(b)),
+      ...remaining,
+    ];
+  } else {
+    itemData.metadata.assignees?.sort(defaultSort);
+  }
 
   return itemData;
 }

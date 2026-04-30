@@ -235,7 +235,7 @@ function LanesRaw({ lanes, collapseDir }: LanesProps) {
         return (
           <DraggableLane
             collapseDir={collapseDir}
-            isCollapsed={(search?.query && !search.lanes.has(lane)) || !!collapseState[i]}
+            isCollapsed={(search?.hasFilters && !search.lanes.has(lane)) || !!collapseState[i]}
             key={boardView + lane.id}
             lane={lane}
             laneIndex={i}

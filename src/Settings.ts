@@ -28,6 +28,12 @@ import {
   TagSort,
   TagSortSetting,
   TagSortSettingTemplate,
+  PriorityOption,
+  PriorityOptionSetting,
+  PriorityOptionSettingTemplate,
+  AssigneeOption,
+  AssigneeOptionSetting,
+  AssigneeOptionSettingTemplate,
 } from './components/types';
 import { getParentWindow } from './dnd/util/getWindow';
 import { t } from './lang/helpers';
@@ -44,6 +50,7 @@ import { cleanUpDateSettings, renderDateSettings } from './settings/DateColorSet
 import { cleanupMetadataSettings, renderMetadataSettings } from './settings/MetadataSettings';
 import { cleanUpTagSettings, renderTagSettings } from './settings/TagColorSettings';
 import { cleanUpTagSortSettings, renderTagSortSettings } from './settings/TagSortSettings';
+import { cleanUpLabelColorSettings, renderLabelColorSettings } from './settings/LabelColorSettings';
 
 const numberRegEx = /^\d+(?:\.\d+)?$/;
 
@@ -90,6 +97,8 @@ export interface KanbanSettings {
   'tag-sort'?: TagSort[];
   'time-format'?: string;
   'time-trigger'?: string;
+  'priority-options'?: PriorityOption[];
+  'assignee-options'?: AssigneeOption[];
 }
 
 export interface KanbanViewSettings {
@@ -138,6 +147,8 @@ export const settingKeyLookup: Set<keyof KanbanSettings> = new Set([
   'tag-sort',
   'time-format',
   'time-trigger',
+  'priority-options',
+  'assignee-options',
 ]);
 
 export type SettingRetriever = <K extends keyof KanbanSettings>(
@@ -473,48 +484,6 @@ export class SettingsManager {
     contentEl.createEl('h4', { text: t('Tags') });
 
     new Setting(contentEl)
-      .setName(t('Move tags to card footer'))
-      .setDesc(
-        t("When toggled, tags will be displayed in the card's footer instead of the card's body.")
-      )
-      .then((setting) => {
-        let toggleComponent: ToggleComponent;
-
-        setting
-          .addToggle((toggle) => {
-            toggleComponent = toggle;
-
-            const [value, globalValue] = this.getSetting('move-tags', local);
-
-            if (value !== undefined) {
-              toggle.setValue(value as boolean);
-            } else if (globalValue !== undefined) {
-              toggle.setValue(globalValue as boolean);
-            }
-
-            toggle.onChange((newValue) => {
-              this.applySettingsUpdate({
-                'move-tags': {
-                  $set: newValue,
-                },
-              });
-            });
-          })
-          .addExtraButton((b) => {
-            b.setIcon('lucide-rotate-ccw')
-              .setTooltip(t('Reset to default'))
-              .onClick(() => {
-                const [, globalValue] = this.getSetting('move-tags', local);
-                toggleComponent.setValue(!!globalValue);
-
-                this.applySettingsUpdate({
-                  $unset: ['move-tags'],
-                });
-              });
-          });
-      });
-
-    new Setting(contentEl)
       .setName(t('Tag click action'))
       .setDesc(
         t(
@@ -585,6 +554,119 @@ export class SettingsManager {
       this.cleanupFns.push(() => {
         if (setting.settingEl) {
           cleanUpTagSettings(setting.settingEl);
+        }
+      });
+    });
+
+    // Priority and Assignee settings
+    contentEl.createEl('h4', { text: t('Priority & Assignee') });
+
+    new Setting(contentEl)
+      .setName(t('Move priorities and assignees to card footer'))
+      .setDesc(
+        t("When toggled, priorities and assignees will be displayed in the card's footer instead of the card's body.")
+      )
+      .then((setting) => {
+        let toggleComponent: ToggleComponent;
+
+        setting
+          .addToggle((toggle) => {
+            toggleComponent = toggle;
+
+            const [value, globalValue] = this.getSetting('move-tags', local);
+
+            if (value !== undefined) {
+              toggle.setValue(value as boolean);
+            } else if (globalValue !== undefined) {
+              toggle.setValue(globalValue as boolean);
+            }
+
+            toggle.onChange((newValue) => {
+              this.applySettingsUpdate({
+                'move-tags': {
+                  $set: newValue,
+                },
+              });
+            });
+          })
+          .addExtraButton((b) => {
+            b.setIcon('lucide-rotate-ccw')
+              .setTooltip(t('Reset to default'))
+              .onClick(() => {
+                const [, globalValue] = this.getSetting('move-tags', local);
+                toggleComponent.setValue(!!globalValue);
+
+                this.applySettingsUpdate({
+                  $unset: ['move-tags'],
+                });
+              });
+          });
+      });
+
+    new Setting(contentEl).then((setting) => {
+      const [value, globalValue] = this.getSetting('priority-options', local);
+
+      const keys: PriorityOptionSetting[] = ((value || globalValue || []) as PriorityOption[]).map((k) => {
+        return {
+          ...PriorityOptionSettingTemplate,
+          id: generateInstanceId(),
+          data: k,
+        };
+      });
+
+      renderLabelColorSettings(
+        setting.settingEl,
+        keys,
+        (keys: PriorityOptionSetting[]) =>
+          this.applySettingsUpdate({
+            'priority-options': {
+              $set: keys.map((k) => k.data),
+            },
+          }),
+        t('Priority options'),
+        t('Set colors for priority options displayed in cards.'),
+        t('Add priority'),
+        '高',
+        '!'
+      );
+
+      this.cleanupFns.push(() => {
+        if (setting.settingEl) {
+          cleanUpLabelColorSettings(setting.settingEl);
+        }
+      });
+    });
+
+    new Setting(contentEl).then((setting) => {
+      const [value, globalValue] = this.getSetting('assignee-options', local);
+
+      const keys: AssigneeOptionSetting[] = ((value || globalValue || []) as AssigneeOption[]).map((k) => {
+        return {
+          ...AssigneeOptionSettingTemplate,
+          id: generateInstanceId(),
+          data: k,
+        };
+      });
+
+      renderLabelColorSettings(
+        setting.settingEl,
+        keys,
+        (keys: AssigneeOptionSetting[]) =>
+          this.applySettingsUpdate({
+            'assignee-options': {
+              $set: keys.map((k) => k.data),
+            },
+          }),
+        t('Assignee options'),
+        t('Set colors for assignee options displayed in cards.'),
+        t('Add assignee'),
+        '张三',
+        '@'
+      );
+
+      this.cleanupFns.push(() => {
+        if (setting.settingEl) {
+          cleanUpLabelColorSettings(setting.settingEl);
         }
       });
     });
