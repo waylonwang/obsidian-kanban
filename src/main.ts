@@ -20,6 +20,8 @@ import { getParentWindow } from './dnd/util/getWindow';
 import { hasFrontmatterKey } from './helpers';
 import { t } from './lang/helpers';
 import { basicFrontmatter, frontmatterKey } from './parsers/common';
+import { KanbanCalendarView, VIEW_TYPE_KANBAN_CALENDAR } from './calendar/calendar-view';
+import { DEFAULT_KANBAN_CALENDAR_SETTINGS, KanbanCalendarSettings } from './calendar/types';
 
 interface WindowRegistry {
   viewMap: Map<string, KanbanView>;
@@ -133,6 +135,7 @@ export default class KanbanPlugin extends Plugin {
     this.addSettingTab(this.settingsTab);
 
     this.registerView(kanbanViewType, (leaf) => new KanbanView(leaf, this));
+    this.registerView(VIEW_TYPE_KANBAN_CALENDAR, (leaf) => new KanbanCalendarView(leaf, this));
     this.registerMonkeyPatches();
     this.registerCommands();
     this.registerEvents();
@@ -149,6 +152,19 @@ export default class KanbanPlugin extends Plugin {
 
     this.addRibbonIcon(kanbanIcon, t('Create new board'), () => {
       this.newKanban();
+    });
+
+    // Calendar ribbon icon and commands
+    this.addRibbonIcon('calendar-days', '打开看板日历', () => {
+      this.activateCalendarView();
+    });
+
+    this.addCommand({
+      id: 'open-kanban-calendar',
+      name: '打开看板日历',
+      callback: () => {
+        this.activateCalendarView();
+      }
     });
   }
 
@@ -836,5 +852,58 @@ export default class KanbanPlugin extends Plugin {
         },
       })
     );
+  }
+
+  async activateCalendarView() {
+    const { workspace } = this.app;
+
+    let leaf: WorkspaceLeaf | null = workspace.getLeavesOfType(VIEW_TYPE_KANBAN_CALENDAR)[0];
+
+    const calendarSettings = this.settings['kanban-calendar'] || DEFAULT_KANBAN_CALENDAR_SETTINGS;
+
+    if (leaf) {
+      // Check if current leaf is in sidebar vs main area
+      const root = leaf.getRoot();
+      const isInSidebar = root !== workspace.rootSplit;
+      const shouldBeInSidebar = calendarSettings.openLocation === 'sidebar';
+
+      // If location doesn't match, close current and reopen in correct location
+      if (isInSidebar !== shouldBeInSidebar) {
+        leaf.detach();
+        leaf = null;
+      }
+    }
+
+    if (!leaf) {
+      if (calendarSettings.openLocation === 'tab') {
+        // Open in new tab
+        leaf = workspace.getLeaf('tab');
+      } else {
+        // Open in sidebar (default)
+        leaf = workspace.getRightLeaf(false);
+      }
+
+      if (leaf) {
+        await leaf.setViewState({
+          type: VIEW_TYPE_KANBAN_CALENDAR,
+          active: true,
+        });
+      }
+    }
+
+    if (leaf) {
+      workspace.revealLeaf(leaf);
+    }
+  }
+
+  refreshCalendarViews() {
+    const { workspace } = this.app;
+    const leaves = workspace.getLeavesOfType(VIEW_TYPE_KANBAN_CALENDAR);
+    for (const leaf of leaves) {
+      const view = leaf.view as KanbanCalendarView;
+      if (view && view.refresh) {
+        view.refresh();
+      }
+    }
   }
 }
