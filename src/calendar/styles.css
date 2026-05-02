@@ -6,6 +6,27 @@
   flex-direction: column;
 }
 
+/* Board Calendar View - embedded in Kanban view */
+.kanban-calendar-board-view {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+}
+
+.kanban-calendar-board-view .kanban-calendar-container {
+  font-family: var(--font-family);
+  color: var(--text-normal);
+  background-color: var(--background-primary);
+  border-radius: 4px;
+  border: 1px solid var(--background-modifier-border);
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 .kanban-calendar-container {
   font-family: var(--font-family);
   color: var(--text-normal);
@@ -69,8 +90,8 @@
 .kanban-calendar-location-toggle {
   display: flex;
   gap: 3px;
-  border-right: 1px solid var(--background-modifier-border);
-  padding-right: 10px;
+  border-left: 1px solid var(--background-modifier-border);
+  padding-left: 10px;
 }
 
 .kanban-calendar-location-toggle button {
@@ -321,6 +342,29 @@
 .kanban-calendar-task-description {
   margin: 3px 0;
   line-height: 1.3;
+}
+
+.kanban-calendar-task-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 4px;
+}
+
+.kanban-calendar-priority {
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.75em;
+  background-color: var(--color-orange);
+  color: var(--text-on-accent);
+}
+
+.kanban-calendar-assignee {
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.75em;
+  background-color: var(--color-blue);
+  color: var(--text-on-accent);
 }
 
 .kanban-calendar-task-tags {

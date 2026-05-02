@@ -1,11 +1,11 @@
-import { h } from 'preact';
-import { useState, useEffect, useMemo } from 'preact/hooks';
+import { VNode } from 'preact';
+import { useState, useMemo } from 'preact/hooks';
 import { Board, Item, Lane } from '../types';
 import { StateManager } from '../../StateManager';
 import { KanbanView } from '../../KanbanView';
-import { KanbanTask, TaskColorConfig } from '../../calendar/types';
+import { KanbanTask } from '../../calendar/types';
 import { CalendarComponent } from '../../calendar/calendar-component';
-import { TFile } from 'obsidian';
+import { MarkdownRenderer } from '../MarkdownRenderer/MarkdownRenderer';
 
 interface BoardCalendarViewProps {
   boardData: Board;
@@ -23,7 +23,7 @@ function boardToTasks(boardData: Board, filePath: string): KanbanTask[] {
     const listName = lane.data.title;
 
     lane.children.forEach((item: Item) => {
-      const { metadata, checked, title } = item.data;
+      const { metadata, checked, title, titleRaw } = item.data;
 
       // 只有有日期的才显示在日历中
       if (metadata.dateStr) {
@@ -34,19 +34,17 @@ function boardToTasks(boardData: Board, filePath: string): KanbanTask[] {
           linkedNote = linkMatch[1];
         }
 
-        // 清理描述 - 移除日期时间标记和链接
-        let description = title;
-        description = description.replace(/\[\[([^\]]+)\]\]/g, '').trim();
-        description = description.replace(/\*\*(.*?)\*\*/g, '$1').trim();
-
         const task: KanbanTask = {
           id: item.id,
-          description,
+          description: title,
+          titleRaw: titleRaw || title, // Keep original for rendering
           date: metadata.dateStr,
           time: metadata.timeStr,
           startTime: metadata.timeStr,
           endTime: undefined,
           tags: metadata.tags || [],
+          priorities: metadata.priorities || [],
+          assignees: metadata.assignees || [],
           completed: checked,
           source: filePath,
           linkedNote,
@@ -97,6 +95,17 @@ export const BoardCalendarView = ({ boardData, stateManager, view }: BoardCalend
 
   // 获取列表名称
   const availableLists = useMemo(() => getListsFromBoard(boardData), [boardData]);
+
+  // 自定义任务内容渲染函数 - 使用 MarkdownRenderer 渲染链接等
+  const renderTaskContent = (task: KanbanTask): VNode => {
+    return (
+      <MarkdownRenderer
+        entityId={task.id}
+        className="kanban-calendar-item-markdown"
+        markdownString={task.titleRaw}
+      />
+    );
+  };
 
   // 处理任务点击
   const handleTaskClick = (task: KanbanTask) => {
@@ -175,6 +184,7 @@ export const BoardCalendarView = ({ boardData, stateManager, view }: BoardCalend
         initialView={calendarSettings.calendarView}
         calendarLocation={calendarLocation}
         onLocationChange={handleLocationChange}
+        renderTaskContent={renderTaskContent}
       />
     </div>
   );

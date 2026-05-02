@@ -26,6 +26,7 @@ import { PromiseQueue } from './helpers/util';
 import { t } from './lang/helpers';
 import KanbanPlugin from './main';
 import { frontmatterKey } from './parsers/common';
+import { VIEW_TYPE_KANBAN_CALENDAR } from './calendar/calendar-view';
 
 export const kanbanViewType = 'kanban';
 export const kanbanIcon = 'lucide-trello';
@@ -449,7 +450,14 @@ export class KanbanView extends TextFileView implements HoverParent {
         t('Board view'),
         (evt) => {
           const view = this.viewSettings[frontmatterKey] || stateManager.getSetting(frontmatterKey);
-          new Menu()
+          // 检查侧边栏是否有日历视图打开
+          const calendarLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_KANBAN_CALENDAR);
+          const hasSidebarCalendar = calendarLeaves.some(leaf => {
+            const root = leaf.getRoot();
+            return root !== this.app.workspace.rootSplit;
+          });
+
+          const menu = new Menu()
             .addItem((item) =>
               item
                 .setTitle(t('View as board'))
@@ -477,15 +485,20 @@ export class KanbanView extends TextFileView implements HoverParent {
                 .setIcon('lucide-columns')
                 .setChecked(view === 'waterfall')
                 .onClick(() => this.setView('waterfall'))
-            )
-            .addItem((item) =>
+            );
+
+          // 只有侧边栏没有日历视图打开时才显示日历视图选项
+          if (!hasSidebarCalendar) {
+            menu.addItem((item) =>
               item
                 .setTitle(t('View as calendar'))
                 .setIcon('lucide-calendar-check')
                 .setChecked(view === 'calendar')
                 .onClick(() => this.setView('calendar'))
-            )
-            .showAtMouseEvent(evt);
+            );
+          }
+
+          menu.showAtMouseEvent(evt);
         }
       );
     } else if (!stateManager.getSetting('show-set-view') && this.actionButtons['show-set-view']) {

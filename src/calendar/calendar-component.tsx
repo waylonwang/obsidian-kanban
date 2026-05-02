@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'preact/hooks';
-import { h } from 'preact';
+import { h, VNode } from 'preact';
 import { KanbanTask, TaskColorConfig } from './types';
 
 interface CalendarComponentProps {
@@ -18,6 +18,7 @@ interface CalendarComponentProps {
   initialDate?: string;
   calendarLocation?: 'view' | 'sidebar';
   onLocationChange?: (location: 'view' | 'sidebar') => void;
+  renderTaskContent?: (task: KanbanTask) => VNode; // Custom render function for task content
 }
 
 export const CalendarComponent = ({
@@ -35,7 +36,8 @@ export const CalendarComponent = ({
   initialView = 'month',
   initialDate = new Date().toISOString(),
   calendarLocation = 'view',
-  onLocationChange
+  onLocationChange,
+  renderTaskContent
 }: CalendarComponentProps) => {
   const [view, setView] = useState<'week' | 'month' | 'year'>(initialView);
   const [currentDate, setCurrentDate] = useState(initialDate);
@@ -483,10 +485,12 @@ export const CalendarComponent = ({
           onDragEnd={handleDragEnd as any}
         >
           {task.time && <span className="kanban-calendar-task-time">{task.time}</span>}
-          <span>{task.description.length > 20
-            ? task.description.substring(0, 20) + '...'
-            : task.description}
-          </span>
+          {renderTaskContent ? renderTaskContent(task) : (
+            <span>{task.description.length > 20
+              ? task.description.substring(0, 20) + '...'
+              : task.description}
+            </span>
+          )}
         </div>
       );
     }
@@ -501,12 +505,26 @@ export const CalendarComponent = ({
         onDragEnd={handleDragEnd as any}
       >
         {task.time && <div className="kanban-calendar-task-time">{task.time}</div>}
-        <div className="kanban-calendar-task-description">{task.description}</div>
-        <div className="kanban-calendar-task-tags">
-          {task.tags.map(tag => (
-            <span key={tag} className="kanban-calendar-tag">{tag}</span>
-          ))}
+        <div className="kanban-calendar-task-description">
+          {renderTaskContent ? renderTaskContent(task) : task.description}
         </div>
+        {(task.priorities?.length > 0 || task.assignees?.length > 0) && (
+          <div className="kanban-calendar-task-labels">
+            {task.priorities?.map(priority => (
+              <span key={priority} className="kanban-calendar-priority">{priority}</span>
+            ))}
+            {task.assignees?.map(assignee => (
+              <span key={assignee} className="kanban-calendar-assignee">{assignee}</span>
+            ))}
+          </div>
+        )}
+        {task.tags.length > 0 && (
+          <div className="kanban-calendar-task-tags">
+            {task.tags.map(tag => (
+              <span key={tag} className="kanban-calendar-tag">{tag}</span>
+            ))}
+          </div>
+        )}
       </div>
     );
   };
@@ -588,24 +606,6 @@ export const CalendarComponent = ({
         </div>
         <div className="kanban-calendar-title">{getHeaderTitle()}</div>
         <div className="kanban-calendar-controls">
-          {onLocationChange && (
-            <div className="kanban-calendar-location-toggle">
-              <button
-                className={calendarLocation === 'view' ? 'active' : ''}
-                onClick={() => onLocationChange('view')}
-                title="在当前视图页显示"
-              >
-                视图页
-              </button>
-              <button
-                className={calendarLocation === 'sidebar' ? 'active' : ''}
-                onClick={() => onLocationChange('sidebar')}
-                title="在侧边栏显示"
-              >
-                侧边栏
-              </button>
-            </div>
-          )}
           <div className="kanban-calendar-view-selector">
             <button
               className={view === 'week' ? 'active' : ''}
@@ -626,6 +626,24 @@ export const CalendarComponent = ({
               年
             </button>
           </div>
+          {onLocationChange && (
+            <div className="kanban-calendar-location-toggle">
+              <button
+                className={calendarLocation === 'view' ? 'active' : ''}
+                onClick={() => onLocationChange('view')}
+                title="在当前视图页显示"
+              >
+                视图页
+              </button>
+              <button
+                className={calendarLocation === 'sidebar' ? 'active' : ''}
+                onClick={() => onLocationChange('sidebar')}
+                title="在侧边栏显示"
+              >
+                侧边栏
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
