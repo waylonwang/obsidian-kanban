@@ -18,6 +18,7 @@ const lang: Partial<Lang> = {
   'View as list': '列表视图',
   'View as table': '表格视图',
   'View as waterfall': '瀑布流视图',
+  'View as calendar': '日历视图',
   'Board view': '视图',
 
   // KanbanView.tsx
