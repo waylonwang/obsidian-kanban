@@ -153,8 +153,8 @@ export const BoardCalendarView = ({ boardData, stateManager, view }: BoardCalend
   const handleLocationChange = (location: 'view' | 'sidebar') => {
     setCalendarLocation(location);
     if (location === 'sidebar') {
-      // 打开侧边栏日历视图
-      view.plugin.activateCalendarView();
+      // 打开侧边栏日历视图（强制在侧边栏打开）
+      view.plugin.activateCalendarView('sidebar');
       // 切换回 board 视图
       view.setView('board');
     }

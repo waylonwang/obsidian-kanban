@@ -866,18 +866,21 @@ export default class KanbanPlugin extends Plugin {
     );
   }
 
-  async activateCalendarView() {
+  async activateCalendarView(location?: 'sidebar' | 'tab') {
     const { workspace } = this.app;
 
     let leaf: WorkspaceLeaf | null = workspace.getLeavesOfType(VIEW_TYPE_KANBAN_CALENDAR)[0];
 
     const calendarSettings = this.settings['kanban-calendar'] || DEFAULT_KANBAN_CALENDAR_SETTINGS;
 
+    // Use provided location or fallback to settings
+    const openLocation = location || calendarSettings.openLocation;
+
     if (leaf) {
       // Check if current leaf is in sidebar vs main area
       const root = leaf.getRoot();
       const isInSidebar = root !== workspace.rootSplit;
-      const shouldBeInSidebar = calendarSettings.openLocation === 'sidebar';
+      const shouldBeInSidebar = openLocation === 'sidebar';
 
       // If location doesn't match, close current and reopen in correct location
       if (isInSidebar !== shouldBeInSidebar) {
@@ -887,7 +890,7 @@ export default class KanbanPlugin extends Plugin {
     }
 
     if (!leaf) {
-      if (calendarSettings.openLocation === 'tab') {
+      if (openLocation === 'tab') {
         // Open in new tab
         leaf = workspace.getLeaf('tab');
       } else {
