@@ -4,6 +4,7 @@ import { CalendarComponent } from './calendar-component';
 import { KanbanParser } from './kanban-parser';
 import { KanbanTask, DEFAULT_KANBAN_CALENDAR_SETTINGS } from './types';
 import KanbanPlugin from '../main';
+import { KanbanView } from '../KanbanView';
 
 export const VIEW_TYPE_KANBAN_CALENDAR = 'kanban-calendar-view';
 
@@ -205,11 +206,14 @@ export class KanbanCalendarView extends ItemView {
             const newTask: KanbanTask = {
               id: `task-${taskData.description.substring(0, 20).replace(/[^a-zA-Z0-9]/g, '_')}-${taskData.date}`,
               description: taskData.description,
+              titleRaw: taskData.description,
               date: taskData.date,
               time: taskData.time,
               startTime: taskData.time && !taskData.time.includes('-') ? taskData.time : undefined,
               endTime: taskData.time && taskData.time.includes('-') ? taskData.time.split('-')[1] : undefined,
               tags: taskData.tags,
+              priorities: [],
+              assignees: [],
               completed: false,
               source: file.path,
               listName: taskData.listName
@@ -231,7 +235,19 @@ export class KanbanCalendarView extends ItemView {
         // Date changed
       },
       initialView: calendarSettings.calendarView,
-      initialDate: new Date().toISOString()
+      initialDate: new Date().toISOString(),
+      calendarLocation: 'sidebar',
+      onLocationChange: (location: 'view' | 'sidebar') => {
+        if (location === 'view') {
+          // 关闭侧边栏，切换到看板视图的日历视图
+          this.leaf.detach();
+          // 找到当前活动的 KanbanView 并切换到日历视图
+          const kanbanView = this.app.workspace.getActiveViewOfType(KanbanView);
+          if (kanbanView) {
+            kanbanView.setView('calendar');
+          }
+        }
+      }
     }), this.containerEl_);
   }
 

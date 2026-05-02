@@ -1,11 +1,14 @@
 export interface KanbanTask {
   id: string;
   description: string;
+  titleRaw: string; // Original title with all formatting
   date: string;
   time?: string;
   startTime?: string;
   endTime?: string;
   tags: string[];
+  priorities: string[]; // Priority labels
+  assignees: string[]; // Assignee labels
   completed: boolean;
   source: string;
   linkedNote?: string; // Extracted from [[...]] pattern

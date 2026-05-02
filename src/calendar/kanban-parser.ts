@@ -295,11 +295,14 @@ export class KanbanParser {
           tasks.push({
             id: taskId,
             description,
+            titleRaw: description, // For plain markdown files, same as description
             date,
             time: displayTime,
             startTime,
             endTime,
             tags,
+            priorities: [], // Not available in plain markdown
+            assignees: [], // Not available in plain markdown
             completed,
             source: filePath,
             linkedNote,
