@@ -51,6 +51,8 @@ import { cleanupMetadataSettings, renderMetadataSettings } from './settings/Meta
 import { cleanUpTagSettings, renderTagSettings } from './settings/TagColorSettings';
 import { cleanUpTagSortSettings, renderTagSortSettings } from './settings/TagSortSettings';
 import { cleanUpLabelColorSettings, renderLabelColorSettings } from './settings/LabelColorSettings';
+import { KanbanCalendarSettings, DEFAULT_KANBAN_CALENDAR_SETTINGS } from './calendar/types';
+import { KanbanParser } from './calendar/kanban-parser';
 
 const numberRegEx = /^\d+(?:\.\d+)?$/;
 
@@ -101,6 +103,7 @@ export interface KanbanSettings {
   'time-trigger'?: string;
   'priority-options'?: PriorityOption[];
   'assignee-options'?: AssigneeOption[];
+  'kanban-calendar'?: KanbanCalendarSettings;
 }
 
 export interface KanbanViewSettings {
@@ -1751,5 +1754,329 @@ export class KanbanSettingsTab extends PluginSettingTab {
     containerEl.addClass(c('board-settings-modal'));
 
     this.settingsManager.constructUI(containerEl, t('Kanban Plugin'), false);
+
+    // Calendar settings section
+    this.renderCalendarSettings(containerEl);
+  }
+
+  private renderCalendarSettings(containerEl: HTMLElement) {
+    containerEl.createEl('h2', { text: '看板日历设置' });
+
+    const calendarSettings = this.plugin.settings['kanban-calendar'] || DEFAULT_KANBAN_CALENDAR_SETTINGS;
+
+    new Setting(containerEl)
+      .setName('使用当前文件')
+      .setDesc('启用后，仅从当前打开的文件加载任务，新增/修改操作也针对当前文件')
+      .addToggle(toggle => toggle
+        .setValue(calendarSettings.useCurrentFile)
+        .onChange(async (value) => {
+          if (!this.plugin.settings['kanban-calendar']) {
+            this.plugin.settings['kanban-calendar'] = { ...DEFAULT_KANBAN_CALENDAR_SETTINGS };
+          }
+          this.plugin.settings['kanban-calendar'].useCurrentFile = value;
+          await this.plugin.saveSettings();
+          this.plugin.refreshCalendarViews();
+        }));
+
+    new Setting(containerEl)
+      .setName('默认看板')
+      .setDesc('默认看板文件路径（留空则扫描所有文件）')
+      .addText(text => text
+        .setPlaceholder('path/to/kanban-board.md')
+        .setValue(calendarSettings.defaultKanbanBoard)
+        .onChange(async (value) => {
+          if (!this.plugin.settings['kanban-calendar']) {
+            this.plugin.settings['kanban-calendar'] = { ...DEFAULT_KANBAN_CALENDAR_SETTINGS };
+          }
+          this.plugin.settings['kanban-calendar'].defaultKanbanBoard = value;
+          await this.plugin.saveSettings();
+        }));
+
+    new Setting(containerEl)
+      .setName('默认日历视图')
+      .setDesc('选择打开日历时的默认视图')
+      .addDropdown(dropdown => dropdown
+        .addOption('week', '周')
+        .addOption('month', '月')
+        .addOption('year', '年')
+        .setValue(calendarSettings.calendarView)
+        .onChange(async (value) => {
+          if (!this.plugin.settings['kanban-calendar']) {
+            this.plugin.settings['kanban-calendar'] = { ...DEFAULT_KANBAN_CALENDAR_SETTINGS };
+          }
+          this.plugin.settings['kanban-calendar'].calendarView = value as 'week' | 'month' | 'year';
+          await this.plugin.saveSettings();
+        }));
+
+    new Setting(containerEl)
+      .setName('显示已完成任务')
+      .setDesc('是否在日历中显示已完成的任务')
+      .addToggle(toggle => toggle
+        .setValue(calendarSettings.showCompletedTasks)
+        .onChange(async (value) => {
+          if (!this.plugin.settings['kanban-calendar']) {
+            this.plugin.settings['kanban-calendar'] = { ...DEFAULT_KANBAN_CALENDAR_SETTINGS };
+          }
+          this.plugin.settings['kanban-calendar'].showCompletedTasks = value;
+          await this.plugin.saveSettings();
+          this.plugin.refreshCalendarViews();
+        }));
+
+    new Setting(containerEl)
+      .setName('隐藏周末')
+      .setDesc('在日历中隐藏周六和周日')
+      .addToggle(toggle => toggle
+        .setValue(calendarSettings.hideWeekends)
+        .onChange(async (value) => {
+          if (!this.plugin.settings['kanban-calendar']) {
+            this.plugin.settings['kanban-calendar'] = { ...DEFAULT_KANBAN_CALENDAR_SETTINGS };
+          }
+          this.plugin.settings['kanban-calendar'].hideWeekends = value;
+          await this.plugin.saveSettings();
+          this.plugin.refreshCalendarViews();
+        }));
+
+    new Setting(containerEl)
+      .setName('打开位置')
+      .setDesc('选择看板日历的打开位置')
+      .addDropdown(dropdown => dropdown
+        .addOption('sidebar', '侧边栏（右侧）')
+        .addOption('tab', '新标签页')
+        .setValue(calendarSettings.openLocation)
+        .onChange(async (value) => {
+          if (!this.plugin.settings['kanban-calendar']) {
+            this.plugin.settings['kanban-calendar'] = { ...DEFAULT_KANBAN_CALENDAR_SETTINGS };
+          }
+          this.plugin.settings['kanban-calendar'].openLocation = value as 'sidebar' | 'tab';
+          await this.plugin.saveSettings();
+        }));
+
+    // List Filter Section
+    containerEl.createEl('h3', { text: '列表过滤' });
+    containerEl.createEl('p', {
+      text: '选择要在日历中显示的看板列表。',
+      cls: 'setting-item-description'
+    });
+
+    // Load available lists button
+    new Setting(containerEl)
+      .setName('加载可用列表')
+      .setDesc('从看板文件加载所有可用列表')
+      .addButton(button => button
+        .setButtonText('加载列表')
+        .onClick(async () => {
+          await this.loadAndDisplayAvailableLists(containerEl);
+        }));
+
+    // Display current filter settings
+    this.displayListFilterSettings(containerEl, calendarSettings);
+
+    // Task Colors Section
+    containerEl.createEl('h3', { text: '任务颜色' });
+    containerEl.createEl('p', {
+      text: '根据标签和状态配置任务颜色。',
+      cls: 'setting-item-description'
+    });
+
+    // Add color configuration for each existing config
+    calendarSettings.taskColors.forEach((colorConfig, index) => {
+      this.createColorConfigSetting(containerEl, colorConfig, index);
+    });
+
+    // Add new color config button
+    new Setting(containerEl)
+      .setName('添加新颜色配置')
+      .setDesc('添加新的任务颜色规则')
+      .addButton(button => button
+        .setButtonText('添加')
+        .onClick(async () => {
+          if (!this.plugin.settings['kanban-calendar']) {
+            this.plugin.settings['kanban-calendar'] = { ...DEFAULT_KANBAN_CALENDAR_SETTINGS };
+          }
+          this.plugin.settings['kanban-calendar'].taskColors.push({
+            status: 'in-progress',
+            color: '#2196f3'
+          });
+          await this.plugin.saveSettings();
+          this.display(); // Refresh the settings display
+        }));
+  }
+
+  private async loadAndDisplayAvailableLists(containerEl: HTMLElement): Promise<void> {
+    try {
+      const parser = new KanbanParser(this.plugin.app.vault);
+      const calendarSettings = this.plugin.settings['kanban-calendar'] || DEFAULT_KANBAN_CALENDAR_SETTINGS;
+
+      const availableLists = await parser.getAllAvailableLists(
+        calendarSettings.defaultKanbanBoard || undefined
+      );
+
+      // Find or create the lists container
+      let listsContainer = containerEl.querySelector('.calendar-available-lists-container') as HTMLElement;
+      if (!listsContainer) {
+        listsContainer = containerEl.createDiv('calendar-available-lists-container');
+      } else {
+        listsContainer.empty();
+      }
+
+      if (availableLists.length === 0) {
+        listsContainer.createEl('p', { text: '未找到列表。请确保你的看板文件包含 ## 标题。' });
+        return;
+      }
+
+      listsContainer.createEl('h4', { text: '可用列表：' });
+
+      availableLists.forEach(listName => {
+        const listSetting = new Setting(listsContainer)
+          .setName(listName)
+          .setDesc('选择是否在日历中显示此列表');
+
+        // Include checkbox
+        listSetting.addToggle(toggle => {
+          const isIncluded = calendarSettings.includedLists.includes(listName);
+          const isExcluded = calendarSettings.excludedLists.includes(listName);
+
+          // If neither included nor excluded, default to included
+          const shouldBeChecked = isIncluded || (!isIncluded && !isExcluded);
+
+          toggle
+            .setValue(shouldBeChecked)
+            .onChange(async (value) => {
+              if (!this.plugin.settings['kanban-calendar']) {
+                this.plugin.settings['kanban-calendar'] = { ...DEFAULT_KANBAN_CALENDAR_SETTINGS };
+              }
+              if (value) {
+                // Include this list
+                if (!this.plugin.settings['kanban-calendar'].includedLists.includes(listName)) {
+                  this.plugin.settings['kanban-calendar'].includedLists.push(listName);
+                }
+                // Remove from excluded if it was there
+                const excludedIndex = this.plugin.settings['kanban-calendar'].excludedLists.indexOf(listName);
+                if (excludedIndex > -1) {
+                  this.plugin.settings['kanban-calendar'].excludedLists.splice(excludedIndex, 1);
+                }
+              } else {
+                // Exclude this list
+                if (!this.plugin.settings['kanban-calendar'].excludedLists.includes(listName)) {
+                  this.plugin.settings['kanban-calendar'].excludedLists.push(listName);
+                }
+                // Remove from included if it was there
+                const includedIndex = this.plugin.settings['kanban-calendar'].includedLists.indexOf(listName);
+                if (includedIndex > -1) {
+                  this.plugin.settings['kanban-calendar'].includedLists.splice(includedIndex, 1);
+                }
+              }
+              await this.plugin.saveSettings();
+              this.plugin.refreshCalendarViews();
+            });
+        });
+      });
+
+    } catch (error) {
+      console.error('Error loading available lists:', error);
+      const errorContainer = containerEl.createDiv();
+      errorContainer.createEl('p', { text: '加载列表失败。请查看控制台了解详情。' });
+    }
+  }
+
+  private displayListFilterSettings(containerEl: HTMLElement, calendarSettings: KanbanCalendarSettings): void {
+    const { includedLists, excludedLists } = calendarSettings;
+
+    if (includedLists.length > 0 || excludedLists.length > 0) {
+      const filterContainer = containerEl.createDiv('calendar-list-filter-summary');
+      filterContainer.createEl('h4', { text: '当前过滤设置：' });
+
+      if (includedLists.length > 0) {
+        const includedEl = filterContainer.createEl('p');
+        includedEl.createEl('strong', { text: '包含列表：' });
+        includedEl.createSpan({ text: includedLists.join(', ') });
+      }
+
+      if (excludedLists.length > 0) {
+        const excludedEl = filterContainer.createEl('p');
+        excludedEl.createEl('strong', { text: '排除列表：' });
+        excludedEl.createSpan({ text: excludedLists.join(', ') });
+      }
+
+      // Clear filters button
+      new Setting(filterContainer)
+        .setName('重置过滤')
+        .setDesc('清除所有列表过滤')
+        .addButton(button => button
+          .setButtonText('重置')
+          .onClick(async () => {
+            if (!this.plugin.settings['kanban-calendar']) {
+              this.plugin.settings['kanban-calendar'] = { ...DEFAULT_KANBAN_CALENDAR_SETTINGS };
+            }
+            this.plugin.settings['kanban-calendar'].includedLists = [];
+            this.plugin.settings['kanban-calendar'].excludedLists = [];
+            await this.plugin.saveSettings();
+            this.plugin.refreshCalendarViews();
+            this.display(); // Refresh the settings display
+          }));
+    }
+  }
+
+  private createColorConfigSetting(containerEl: HTMLElement, colorConfig: any, index: number): void {
+    const setting = new Setting(containerEl)
+      .setName(`颜色配置 ${index + 1}`)
+      .setDesc('标签（可选）、状态和颜色');
+
+    // Tag input (optional)
+    setting.addText(text => text
+      .setPlaceholder('标签（可选，如 #工作）')
+      .setValue(colorConfig.tag || '')
+      .onChange(async (value) => {
+        if (!this.plugin.settings['kanban-calendar']) {
+          this.plugin.settings['kanban-calendar'] = { ...DEFAULT_KANBAN_CALENDAR_SETTINGS };
+        }
+        if (value.trim()) {
+          this.plugin.settings['kanban-calendar'].taskColors[index].tag = value.trim();
+        } else {
+          delete this.plugin.settings['kanban-calendar'].taskColors[index].tag;
+        }
+        await this.plugin.saveSettings();
+        this.plugin.refreshCalendarViews();
+      }));
+
+    // Status dropdown
+    setting.addDropdown(dropdown => dropdown
+      .addOption('in-progress', '进行中')
+      .addOption('completed', '已完成')
+      .setValue(colorConfig.status)
+      .onChange(async (value) => {
+        if (!this.plugin.settings['kanban-calendar']) {
+          this.plugin.settings['kanban-calendar'] = { ...DEFAULT_KANBAN_CALENDAR_SETTINGS };
+        }
+        this.plugin.settings['kanban-calendar'].taskColors[index].status = value as 'completed' | 'in-progress';
+        await this.plugin.saveSettings();
+        this.plugin.refreshCalendarViews();
+      }));
+
+    // Color input
+    setting.addColorPicker(colorPicker => colorPicker
+      .setValue(colorConfig.color)
+      .onChange(async (value) => {
+        if (!this.plugin.settings['kanban-calendar']) {
+          this.plugin.settings['kanban-calendar'] = { ...DEFAULT_KANBAN_CALENDAR_SETTINGS };
+        }
+        this.plugin.settings['kanban-calendar'].taskColors[index].color = value;
+        await this.plugin.saveSettings();
+        this.plugin.refreshCalendarViews();
+      }));
+
+    // Delete button
+    setting.addButton(button => button
+      .setButtonText('删除')
+      .setWarning()
+      .onClick(async () => {
+        if (!this.plugin.settings['kanban-calendar']) {
+          this.plugin.settings['kanban-calendar'] = { ...DEFAULT_KANBAN_CALENDAR_SETTINGS };
+        }
+        this.plugin.settings['kanban-calendar'].taskColors.splice(index, 1);
+        await this.plugin.saveSettings();
+        this.plugin.refreshCalendarViews();
+        this.display(); // Refresh the settings display
+      }));
   }
 }
