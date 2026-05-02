@@ -16,6 +16,8 @@ interface CalendarComponentProps {
   onDateChange?: (date: string) => void;
   initialView?: 'week' | 'month' | 'year';
   initialDate?: string;
+  calendarLocation?: 'view' | 'sidebar';
+  onLocationChange?: (location: 'view' | 'sidebar') => void;
 }
 
 export const CalendarComponent = ({
@@ -31,7 +33,9 @@ export const CalendarComponent = ({
   onTaskCreate,
   onDateChange,
   initialView = 'month',
-  initialDate = new Date().toISOString()
+  initialDate = new Date().toISOString(),
+  calendarLocation = 'view',
+  onLocationChange
 }: CalendarComponentProps) => {
   const [view, setView] = useState<'week' | 'month' | 'year'>(initialView);
   const [currentDate, setCurrentDate] = useState(initialDate);
@@ -583,25 +587,45 @@ export const CalendarComponent = ({
           <button onClick={navigateNext}>→</button>
         </div>
         <div className="kanban-calendar-title">{getHeaderTitle()}</div>
-        <div className="kanban-calendar-view-selector">
-          <button
-            className={view === 'week' ? 'active' : ''}
-            onClick={() => setView('week')}
-          >
-            周
-          </button>
-          <button
-            className={view === 'month' ? 'active' : ''}
-            onClick={() => setView('month')}
-          >
-            月
-          </button>
-          <button
-            className={view === 'year' ? 'active' : ''}
-            onClick={() => setView('year')}
-          >
-            年
-          </button>
+        <div className="kanban-calendar-controls">
+          {onLocationChange && (
+            <div className="kanban-calendar-location-toggle">
+              <button
+                className={calendarLocation === 'view' ? 'active' : ''}
+                onClick={() => onLocationChange('view')}
+                title="在当前视图页显示"
+              >
+                视图页
+              </button>
+              <button
+                className={calendarLocation === 'sidebar' ? 'active' : ''}
+                onClick={() => onLocationChange('sidebar')}
+                title="在侧边栏显示"
+              >
+                侧边栏
+              </button>
+            </div>
+          )}
+          <div className="kanban-calendar-view-selector">
+            <button
+              className={view === 'week' ? 'active' : ''}
+              onClick={() => setView('week')}
+            >
+              周
+            </button>
+            <button
+              className={view === 'month' ? 'active' : ''}
+              onClick={() => setView('month')}
+            >
+              月
+            </button>
+            <button
+              className={view === 'year' ? 'active' : ''}
+              onClick={() => setView('year')}
+            >
+              年
+            </button>
+          </div>
         </div>
       </div>
     );

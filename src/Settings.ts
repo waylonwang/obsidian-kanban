@@ -56,7 +56,7 @@ import { KanbanParser } from './calendar/kanban-parser';
 
 const numberRegEx = /^\d+(?:\.\d+)?$/;
 
-export type KanbanFormat = 'basic' | 'board' | 'table' | 'list' | 'waterfall';
+export type KanbanFormat = 'basic' | 'board' | 'table' | 'list' | 'waterfall' | 'calendar';
 
 export interface KanbanSettings {
   [frontmatterKey]?: KanbanFormat;

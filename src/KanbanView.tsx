@@ -478,6 +478,13 @@ export class KanbanView extends TextFileView implements HoverParent {
                 .setChecked(view === 'waterfall')
                 .onClick(() => this.setView('waterfall'))
             )
+            .addItem((item) =>
+              item
+                .setTitle(t('View as calendar'))
+                .setIcon('lucide-calendar-check')
+                .setChecked(view === 'calendar')
+                .onClick(() => this.setView('calendar'))
+            )
             .showAtMouseEvent(evt);
         }
       );

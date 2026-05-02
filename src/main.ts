@@ -154,11 +154,7 @@ export default class KanbanPlugin extends Plugin {
       this.newKanban();
     });
 
-    // Calendar ribbon icon and commands
-    this.addRibbonIcon('calendar-days', '打开看板日历', () => {
-      this.activateCalendarView();
-    });
-
+    // Calendar command (no ribbon icon - calendar is now a view type)
     this.addCommand({
       id: 'open-kanban-calendar',
       name: '打开看板日历',
@@ -748,6 +744,22 @@ export default class KanbanPlugin extends Plugin {
 
         if (view && view instanceof KanbanView) {
           view.setView('waterfall');
+        }
+      },
+    });
+
+    this.addCommand({
+      id: 'view-calendar',
+      name: t('View as calendar'),
+      checkCallback: (checking) => {
+        const view = app.workspace.getActiveViewOfType(KanbanView);
+
+        if (checking) {
+          return view && view instanceof KanbanView;
+        }
+
+        if (view && view instanceof KanbanView) {
+          view.setView('calendar');
         }
       },
     });
