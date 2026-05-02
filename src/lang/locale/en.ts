@@ -17,6 +17,7 @@ const en = {
   'View as list': 'View as list',
   'View as table': 'View as table',
   'View as waterfall': 'View as waterfall',
+  'View as calendar': 'View as calendar',
   'Board view': 'Board view',
 
   // KanbanView.tsx
