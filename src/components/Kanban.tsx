@@ -19,9 +19,10 @@ import { Icon } from './Icon/Icon';
 import { Lanes } from './Lane/Lane';
 import { LaneForm } from './Lane/LaneForm';
 import { TableView } from './Table/Table';
+import { BoardCalendarView } from './BoardCalendar/BoardCalendarView';
 import { KanbanContext, SearchContext } from './context';
 import { baseClassName, c, useSearchValue } from './helpers';
-import { DataTypes } from './types';
+import { DataTypes, Board, KanbanTask } from './types';
 
 const boardScrollTiggers = [DataTypes.Item, DataTypes.Lane];
 const boardAccepts = [DataTypes.Lane];
@@ -371,6 +372,8 @@ export const Kanban = ({ view, stateManager }: KanbanProps) => {
             )}
             {boardView === 'table' ? (
               <TableView boardData={boardData} stateManager={stateManager} />
+            ) : boardView === 'calendar' ? (
+              <BoardCalendarView boardData={boardData} stateManager={stateManager} view={view} />
             ) : (
               <ScrollContainer
                 id={view.id}
