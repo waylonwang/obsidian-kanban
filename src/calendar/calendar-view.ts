@@ -239,13 +239,23 @@ export class KanbanCalendarView extends ItemView {
       calendarLocation: 'sidebar',
       onLocationChange: (location: 'view' | 'sidebar') => {
         if (location === 'view') {
-          // 关闭侧边栏，切换到看板视图的日历视图
-          this.leaf.detach();
-          // 找到当前活动的 KanbanView 并切换到日历视图
-          const kanbanView = this.app.workspace.getActiveViewOfType(KanbanView);
-          if (kanbanView) {
-            kanbanView.setView('calendar');
+          // 先找到 KanbanView 并切换到日历视图
+          const kanbanLeaves = this.app.workspace.getLeavesOfType('kanban');
+          if (kanbanLeaves.length > 0) {
+            // 找到与日历任务来源相同的看板，或使用第一个可用的
+            const targetLeaf = kanbanLeaves.find(leaf => {
+              const view = leaf.view as KanbanView;
+              return view.file && this.tasks.some(t => t.source === view.file.path);
+            }) || kanbanLeaves[0];
+
+            const kanbanView = targetLeaf.view as KanbanView;
+            if (kanbanView) {
+              this.app.workspace.setActiveLeaf(targetLeaf);
+              kanbanView.setView('calendar');
+            }
           }
+          // 关闭侧边栏日历
+          this.leaf.detach();
         }
       }
     }), this.containerEl_);
