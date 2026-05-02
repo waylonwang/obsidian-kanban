@@ -166,6 +166,10 @@ export const BoardCalendarView = ({ boardData, stateManager, view }: BoardCalend
       view.plugin.activateCalendarView('sidebar');
       // 切换回 board 视图
       view.setView('board');
+      // 收起右侧侧边栏
+      setTimeout(() => {
+        view.app.workspace.rightSplit?.collapse();
+      }, 100);
     }
   };
 
