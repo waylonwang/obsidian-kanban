@@ -1685,6 +1685,9 @@ export class SettingsModal extends Modal {
     modalEl.addClass(c('board-settings-modal'));
 
     this.settingsManager.constructUI(contentEl, this.view.file.basename, true);
+
+    // Calendar settings section (simplified for board-specific settings)
+    this.renderCalendarSettings(contentEl);
   }
 
   onClose() {
@@ -1692,6 +1695,57 @@ export class SettingsModal extends Modal {
 
     this.settingsManager.cleanUp();
     contentEl.empty();
+  }
+
+  private renderCalendarSettings(containerEl: HTMLElement) {
+    containerEl.createEl('h2', { text: '看板日历设置' });
+
+    const plugin = this.view.plugin;
+    const calendarSettings = plugin.settings['kanban-calendar'] || DEFAULT_KANBAN_CALENDAR_SETTINGS;
+
+    new Setting(containerEl)
+      .setName('默认日历视图')
+      .setDesc('选择打开日历时的默认视图')
+      .addDropdown(dropdown => dropdown
+        .addOption('week', '周')
+        .addOption('month', '月')
+        .addOption('year', '年')
+        .setValue(calendarSettings.calendarView)
+        .onChange(async (value) => {
+          if (!plugin.settings['kanban-calendar']) {
+            plugin.settings['kanban-calendar'] = { ...DEFAULT_KANBAN_CALENDAR_SETTINGS };
+          }
+          plugin.settings['kanban-calendar'].calendarView = value as 'week' | 'month' | 'year';
+          await plugin.saveSettings();
+        }));
+
+    new Setting(containerEl)
+      .setName('显示已完成任务')
+      .setDesc('是否在日历中显示已完成的任务')
+      .addToggle(toggle => toggle
+        .setValue(calendarSettings.showCompletedTasks)
+        .onChange(async (value) => {
+          if (!plugin.settings['kanban-calendar']) {
+            plugin.settings['kanban-calendar'] = { ...DEFAULT_KANBAN_CALENDAR_SETTINGS };
+          }
+          plugin.settings['kanban-calendar'].showCompletedTasks = value;
+          await plugin.saveSettings();
+          plugin.refreshCalendarViews();
+        }));
+
+    new Setting(containerEl)
+      .setName('隐藏周末')
+      .setDesc('在日历中隐藏周六和周日')
+      .addToggle(toggle => toggle
+        .setValue(calendarSettings.hideWeekends)
+        .onChange(async (value) => {
+          if (!plugin.settings['kanban-calendar']) {
+            plugin.settings['kanban-calendar'] = { ...DEFAULT_KANBAN_CALENDAR_SETTINGS };
+          }
+          plugin.settings['kanban-calendar'].hideWeekends = value;
+          await plugin.saveSettings();
+          plugin.refreshCalendarViews();
+        }));
   }
 }
 
