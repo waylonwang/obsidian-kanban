@@ -256,6 +256,8 @@ export class KanbanCalendarView extends ItemView {
           }
           // 关闭侧边栏日历
           this.leaf.detach();
+          // 收起右侧侧边栏
+          this.app.workspace.rightSplit?.collapse();
         }
       }
     }), this.containerEl_);
