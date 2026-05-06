@@ -320,6 +320,23 @@
   transform: scale(1.02);
 }
 
+/* Compact mode footer styling */
+.kanban-calendar-task-compact-footer {
+  margin-top: 2px;
+  font-size: 0.85em;
+}
+
+.kanban-calendar-task-compact-footer .kanban-plugin__item-tag {
+  font-size: 0.9em;
+  padding: 1px 4px;
+}
+
+.kanban-calendar-task-compact-footer .kanban-plugin__item-priority-icon,
+.kanban-calendar-task-compact-footer .kanban-plugin__item-assignee-icon {
+  width: 10px;
+  height: 10px;
+}
+
 /* Completed tasks styling - only apply default green if no custom color is set */
 .kanban-calendar-task.completed:not([style*="background-color"]),
 .kanban-calendar-task-compact.completed:not([style*="background-color"]) {
