@@ -533,23 +533,23 @@ export const CalendarComponent = ({
         <div className="kanban-calendar-task-description">
           {renderTaskContent ? renderTaskContent(task) : task.description}
         </div>
-        {/* 底部区域：根据配置显示优先级、负责人、标签 */}
-        <div className="kanban-calendar-task-footer">
+        {/* 底部区域：根据配置显示优先级、负责人、标签，使用看板样式 */}
+        <div className="kanban-plugin__item-metadata">
           {/* 优先级：只有开启move-priorities-assignees时才在底部显示 */}
           {movePrioritiesAssignees && task.priorities?.length > 0 && (
-            <div className="kanban-calendar-task-priorities">
+            <div className="kanban-plugin__item-priorities">
               {task.priorities.map((priority, i) => {
                 const colorInfo = getPriorityColor(priority);
                 return (
-                  <span
+                  <a
                     key={i}
-                    className="kanban-calendar-task-tag kanban-calendar-task-priority"
+                    className="tag kanban-plugin__item-tag kanban-plugin__item-priority"
                     style={colorInfo ? {
                       '--tag-color': colorInfo.color || '',
                       '--tag-background': colorInfo.backgroundColor || '',
                     } : {}}
                   >
-                    <svg className="kanban-calendar-task-priority-icon" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg className="kanban-plugin__item-priority-icon" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
                       <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
                       <path d="M7 21h10" />
@@ -558,40 +558,43 @@ export const CalendarComponent = ({
                       <path d="M20 7h-1c-3 0-6-2-6-5" />
                     </svg>
                     {priority}
-                  </span>
+                  </a>
                 );
               })}
             </div>
           )}
           {/* 负责人：只有开启move-priorities-assignees时才在底部显示 */}
           {movePrioritiesAssignees && task.assignees?.length > 0 && (
-            <div className="kanban-calendar-task-assignees">
+            <div className="kanban-plugin__item-assignees">
               {task.assignees.map((assignee, i) => {
                 const colorInfo = getAssigneeColor(assignee);
                 return (
-                  <span
+                  <a
                     key={i}
-                    className="kanban-calendar-task-tag kanban-calendar-task-assignee"
+                    className="tag kanban-plugin__item-tag kanban-plugin__item-assignee"
                     style={colorInfo ? {
                       '--tag-color': colorInfo.color || '',
                       '--tag-background': colorInfo.backgroundColor || '',
                     } : {}}
                   >
-                    <svg className="kanban-calendar-task-assignee-icon" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg className="kanban-plugin__item-assignee-icon" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
                       <circle cx="12" cy="7" r="4" />
                     </svg>
                     {assignee}
-                  </span>
+                  </a>
                 );
               })}
             </div>
           )}
           {/* 标签：只有开启move-tags时才在底部显示 */}
           {moveTags && task.tags?.length > 0 && (
-            <div className="kanban-calendar-task-tags">
+            <div className="kanban-plugin__item-tags">
               {task.tags.map((tag, i) => (
-                <span key={i} className="kanban-calendar-task-tag">{tag}</span>
+                <a key={i} className="tag kanban-plugin__item-tag">
+                  <span>{tag[0]}</span>
+                  {tag.slice(1)}
+                </a>
               ))}
             </div>
           )}
