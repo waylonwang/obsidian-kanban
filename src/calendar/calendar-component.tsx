@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'preact/hooks';
-import { h, VNode } from 'preact';
+import { VNode } from 'preact';
 import { KanbanTask, TaskColorConfig } from './types';
+
+interface LabelColorConfig {
+  label: string;
+  color?: string;
+  backgroundColor?: string;
+}
 
 interface CalendarComponentProps {
   tasks: KanbanTask[];
@@ -19,6 +25,10 @@ interface CalendarComponentProps {
   calendarLocation?: 'view' | 'sidebar';
   onLocationChange?: (location: 'view' | 'sidebar') => void;
   renderTaskContent?: (task: KanbanTask) => VNode; // Custom render function for task content
+  movePrioritiesAssignees?: boolean; // 是否将优先级和负责人移至底部
+  moveTags?: boolean; // 是否将标签移至底部
+  priorityOptions?: LabelColorConfig[]; // 优先级选项配置
+  assigneeOptions?: LabelColorConfig[]; // 负责人选项配置
 }
 
 export const CalendarComponent = ({
@@ -37,7 +47,11 @@ export const CalendarComponent = ({
   initialDate = new Date().toISOString(),
   calendarLocation = 'view',
   onLocationChange,
-  renderTaskContent
+  renderTaskContent,
+  movePrioritiesAssignees = false,
+  moveTags = false,
+  priorityOptions = [],
+  assigneeOptions = []
 }: CalendarComponentProps) => {
   const [view, setView] = useState<'week' | 'month' | 'year'>(initialView);
   const [currentDate, setCurrentDate] = useState(initialDate);
@@ -473,6 +487,17 @@ export const CalendarComponent = ({
       color: 'white' // Ensure text is readable on custom backgrounds
     } : {};
 
+    // Helper to get color for priority/assignee
+    const getPriorityColor = (label: string) => {
+      const option = priorityOptions.find(o => o.label === label);
+      return option ? { color: option.color, backgroundColor: option.backgroundColor } : null;
+    };
+
+    const getAssigneeColor = (label: string) => {
+      const option = assigneeOptions.find(o => o.label === label);
+      return option ? { color: option.color, backgroundColor: option.backgroundColor } : null;
+    };
+
     if (compact) {
       return (
         <div
@@ -508,23 +533,69 @@ export const CalendarComponent = ({
         <div className="kanban-calendar-task-description">
           {renderTaskContent ? renderTaskContent(task) : task.description}
         </div>
-        {(task.priorities?.length > 0 || task.assignees?.length > 0) && (
-          <div className="kanban-calendar-task-labels">
-            {task.priorities?.map(priority => (
-              <span key={priority} className="kanban-calendar-priority">{priority}</span>
-            ))}
-            {task.assignees?.map(assignee => (
-              <span key={assignee} className="kanban-calendar-assignee">{assignee}</span>
-            ))}
-          </div>
-        )}
-        {task.tags.length > 0 && (
-          <div className="kanban-calendar-task-tags">
-            {task.tags.map(tag => (
-              <span key={tag} className="kanban-calendar-tag">{tag}</span>
-            ))}
-          </div>
-        )}
+        {/* 底部区域：根据配置显示优先级、负责人、标签 */}
+        <div className="kanban-calendar-task-footer">
+          {/* 优先级：只有开启move-priorities-assignees时才在底部显示 */}
+          {movePrioritiesAssignees && task.priorities?.length > 0 && (
+            <div className="kanban-calendar-task-priorities">
+              {task.priorities.map((priority, i) => {
+                const colorInfo = getPriorityColor(priority);
+                return (
+                  <span
+                    key={i}
+                    className="kanban-calendar-task-tag kanban-calendar-task-priority"
+                    style={colorInfo ? {
+                      '--tag-color': colorInfo.color || '',
+                      '--tag-background': colorInfo.backgroundColor || '',
+                    } : {}}
+                  >
+                    <svg className="kanban-calendar-task-priority-icon" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+                      <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+                      <path d="M7 21h10" />
+                      <path d="M12 3v18" />
+                      <path d="M3 7h1c3 0 6-2 6-5" />
+                      <path d="M20 7h-1c-3 0-6-2-6-5" />
+                    </svg>
+                    {priority}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+          {/* 负责人：只有开启move-priorities-assignees时才在底部显示 */}
+          {movePrioritiesAssignees && task.assignees?.length > 0 && (
+            <div className="kanban-calendar-task-assignees">
+              {task.assignees.map((assignee, i) => {
+                const colorInfo = getAssigneeColor(assignee);
+                return (
+                  <span
+                    key={i}
+                    className="kanban-calendar-task-tag kanban-calendar-task-assignee"
+                    style={colorInfo ? {
+                      '--tag-color': colorInfo.color || '',
+                      '--tag-background': colorInfo.backgroundColor || '',
+                    } : {}}
+                  >
+                    <svg className="kanban-calendar-task-assignee-icon" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                    {assignee}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+          {/* 标签：只有开启move-tags时才在底部显示 */}
+          {moveTags && task.tags?.length > 0 && (
+            <div className="kanban-calendar-task-tags">
+              {task.tags.map((tag, i) => (
+                <span key={i} className="kanban-calendar-task-tag">{tag}</span>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     );
   };

@@ -13,10 +13,69 @@ interface BoardCalendarViewProps {
   view: KanbanView;
 }
 
+interface LabelColorConfig {
+  label: string;
+  color?: string;
+  backgroundColor?: string;
+}
+
+/**
+ * 清理title，移除日期时间标记
+ */
+function cleanTitle(title: string, dateTrigger: string, timeTrigger: string): string {
+  // 移除日期标记: %{YYYY-MM-DD} 或自定义触发符
+  const datePattern = new RegExp(`${dateTrigger.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\{[^}]+\\}`, 'g');
+  let cleaned = title.replace(datePattern, '');
+
+  // 移除时间标记: %%{HH:MM} 或自定义触发符
+  const timePattern = new RegExp(`${timeTrigger.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\{[^}]+\\}`, 'g');
+  cleaned = cleaned.replace(timePattern, '');
+
+  return cleaned.trim();
+}
+
+/**
+ * 从title中移除优先级和负责人（当move-priorities-assignees开启时）
+ */
+function removePrioritiesAndAssigneesFromTitle(title: string, priorities: string[], assignees: string[]): string {
+  let cleaned = title;
+  // 移除优先级标记 !priority
+  priorities.forEach(p => {
+    const pattern = new RegExp(`!${p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g');
+    cleaned = cleaned.replace(pattern, '');
+  });
+  // 移除负责人标记 @assignee
+  assignees.forEach(a => {
+    const pattern = new RegExp(`@${a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g');
+    cleaned = cleaned.replace(pattern, '');
+  });
+  return cleaned.trim();
+}
+
+/**
+ * 从title中移除标签（当move-tags开启时）
+ */
+function removeTagsFromTitle(title: string, tags: string[]): string {
+  let cleaned = title;
+  tags.forEach(tag => {
+    // 标签可能是 #tag 或 tag 格式
+    const tagPattern = new RegExp(`#${tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}|${tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g');
+    cleaned = cleaned.replace(tagPattern, '');
+  });
+  return cleaned.trim();
+}
+
 /**
  * 将 Board 数据转换为 KanbanTask 数组
  */
-function boardToTasks(boardData: Board, filePath: string): KanbanTask[] {
+function boardToTasks(
+  boardData: Board,
+  filePath: string,
+  dateTrigger: string,
+  timeTrigger: string,
+  movePrioritiesAssignees: boolean,
+  moveTags: boolean
+): KanbanTask[] {
   const tasks: KanbanTask[] = [];
 
   boardData.children.forEach((lane: Lane) => {
@@ -34,17 +93,33 @@ function boardToTasks(boardData: Board, filePath: string): KanbanTask[] {
           linkedNote = linkMatch[1];
         }
 
+        // 清理title：移除日期时间标记
+        let cleanedTitle = cleanTitle(titleRaw || title, dateTrigger, timeTrigger);
+
+        // 如果开启move-priorities-assignees，移除优先级和负责人
+        const priorities = metadata.priorities || [];
+        const assignees = metadata.assignees || [];
+        if (movePrioritiesAssignees) {
+          cleanedTitle = removePrioritiesAndAssigneesFromTitle(cleanedTitle, priorities, assignees);
+        }
+
+        // 如果开启move-tags，移除标签
+        const tags = metadata.tags || [];
+        if (moveTags) {
+          cleanedTitle = removeTagsFromTitle(cleanedTitle, tags);
+        }
+
         const task: KanbanTask = {
           id: item.id,
-          description: title,
-          titleRaw: titleRaw || title, // Keep original for rendering
+          description: cleanedTitle,
+          titleRaw: cleanedTitle,
           date: metadata.dateStr,
           time: metadata.timeStr,
           startTime: metadata.timeStr,
           endTime: undefined,
-          tags: metadata.tags || [],
-          priorities: metadata.priorities || [],
-          assignees: metadata.assignees || [],
+          tags: tags,
+          priorities: priorities,
+          assignees: assignees,
           completed: checked,
           source: filePath,
           linkedNote,
@@ -69,6 +144,14 @@ function getListsFromBoard(boardData: Board): string[] {
 export const BoardCalendarView = ({ boardData, stateManager, view }: BoardCalendarViewProps) => {
   const filePath = stateManager.file.path;
 
+  // 获取看板配置
+  const dateTrigger = stateManager.getSetting('date-trigger') || '@';
+  const timeTrigger = stateManager.getSetting('time-trigger') || '@';
+  const movePrioritiesAssignees = stateManager.getSetting('move-priorities-assignees') || false;
+  const moveTags = stateManager.getSetting('move-tags') || false;
+  const priorityOptions = (stateManager.getSetting('priority-options') || []) as LabelColorConfig[];
+  const assigneeOptions = (stateManager.getSetting('assignee-options') || []) as LabelColorConfig[];
+
   // 获取 calendar 设置
   const calendarSettings = stateManager.getSetting('kanban-calendar') || {
     calendarView: 'month',
@@ -85,13 +168,13 @@ export const BoardCalendarView = ({ boardData, stateManager, view }: BoardCalend
 
   // 转换 board 数据为 tasks
   const tasks = useMemo(() => {
-    const allTasks = boardToTasks(boardData, filePath);
+    const allTasks = boardToTasks(boardData, filePath, dateTrigger, timeTrigger, movePrioritiesAssignees, moveTags);
     // 根据设置过滤已完成任务
     if (!calendarSettings.showCompletedTasks) {
       return allTasks.filter(t => !t.completed);
     }
     return allTasks;
-  }, [boardData, filePath, calendarSettings.showCompletedTasks]);
+  }, [boardData, filePath, calendarSettings.showCompletedTasks, dateTrigger, timeTrigger, movePrioritiesAssignees, moveTags]);
 
   // 获取列表名称
   const availableLists = useMemo(() => getListsFromBoard(boardData), [boardData]);
@@ -154,7 +237,6 @@ export const BoardCalendarView = ({ boardData, stateManager, view }: BoardCalend
     tags: string[]
   }) => {
     // 在指定列表中创建新卡片
-    const boardModifiers = view.plugin.getBoardModifiers(view, stateManager);
     // 添加新项到指定 lane
   };
 
@@ -189,6 +271,10 @@ export const BoardCalendarView = ({ boardData, stateManager, view }: BoardCalend
         calendarLocation={calendarLocation}
         onLocationChange={handleLocationChange}
         renderTaskContent={renderTaskContent}
+        movePrioritiesAssignees={movePrioritiesAssignees}
+        moveTags={moveTags}
+        priorityOptions={priorityOptions}
+        assigneeOptions={assigneeOptions}
       />
     </div>
   );
