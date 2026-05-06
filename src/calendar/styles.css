@@ -348,36 +348,41 @@
   line-height: 1.3;
 }
 
-.kanban-calendar-task-labels {
+.kanban-calendar-task-footer {
   display: flex;
   flex-wrap: wrap;
   gap: 3px;
   margin-top: 4px;
 }
 
-.kanban-calendar-priority {
-  padding: 1px 4px;
-  border-radius: 3px;
-  font-size: 0.75em;
-  background-color: var(--color-orange);
-  color: var(--text-on-accent);
-}
-
-.kanban-calendar-assignee {
-  padding: 1px 4px;
-  border-radius: 3px;
-  font-size: 0.75em;
-  background-color: var(--color-blue);
-  color: var(--text-on-accent);
-}
-
+.kanban-calendar-task-priorities,
+.kanban-calendar-task-assignees,
 .kanban-calendar-task-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 3px;
-  margin-top: 4px;
 }
 
+/* 使用Obsidian的tag样式，与看板卡片保持一致 */
+.kanban-calendar-task-tag {
+  padding: 1px 6px;
+  border-radius: var(--tag-radius);
+  font-size: 0.85em;
+  background-color: var(--tag-background, var(--text-accent));
+  color: var(--tag-color, white);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.kanban-calendar-task-priority-icon,
+.kanban-calendar-task-assignee-icon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+/* 旧样式保留兼容 */
 .kanban-calendar-tag {
   padding: 1px 4px;
   border-radius: 3px;
