@@ -38,6 +38,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+  contain: strict;
 }
 
 /* Header Styles */
@@ -157,7 +158,8 @@
 
 .kanban-calendar-day-tasks {
   padding: 8px;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   flex: 1;
 }
 
@@ -226,8 +228,10 @@
 
 .kanban-calendar-day-cell-tasks {
   margin-top: 4px;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   flex: 1;
+  max-height: 100%;
 }
 
 /* Year View Styles */
