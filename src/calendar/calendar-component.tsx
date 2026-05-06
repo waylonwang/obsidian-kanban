@@ -861,12 +861,9 @@ export const CalendarComponent = ({
                   </button>
                 </div>
                 <div className="kanban-calendar-day-cell-tasks">
-                  {dayTasks.slice(0, 3).map(task => (
+                  {dayTasks.map(task => (
                     <TaskItem key={task.id} task={task} compact={true} />
                   ))}
-                  {dayTasks.length > 3 && (
-                    <div className="kanban-calendar-more-tasks">还有{dayTasks.length - 3}项</div>
-                  )}
                 </div>
               </div>
             );
