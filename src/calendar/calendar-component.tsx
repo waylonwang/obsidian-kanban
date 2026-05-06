@@ -503,7 +503,6 @@ export const CalendarComponent = ({
         <div
           className={`kanban-calendar-task-compact ${task.completed ? 'completed' : ''}`}
           style={taskStyle}
-          title={`${task.time ? task.time + ' - ' : ''}${task.description}`}
           onClick={handleTaskClick}
           draggable={true}
           onDragStart={handleDragStart as any}
@@ -516,6 +515,72 @@ export const CalendarComponent = ({
               : task.description}
             </span>
           )}
+          {/* compact模式底部区域 */}
+          {(movePrioritiesAssignees && (task.priorities?.length > 0 || task.assignees?.length > 0)) ||
+           (moveTags && task.tags?.length > 0) ? (
+            <div className="kanban-plugin__item-metadata kanban-calendar-task-compact-footer">
+              {movePrioritiesAssignees && task.priorities?.length > 0 && (
+                <div className="kanban-plugin__item-priorities">
+                  {task.priorities.map((priority, i) => {
+                    const colorInfo = getPriorityColor(priority);
+                    return (
+                      <a
+                        key={i}
+                        className="tag kanban-plugin__item-tag kanban-plugin__item-priority"
+                        style={colorInfo ? {
+                          '--tag-color': colorInfo.color || '',
+                          '--tag-background': colorInfo.backgroundColor || '',
+                        } : {}}
+                      >
+                        <svg className="kanban-plugin__item-priority-icon" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+                          <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+                          <path d="M7 21h10" />
+                          <path d="M12 3v18" />
+                          <path d="M3 7h1c3 0 6-2 6-5" />
+                          <path d="M20 7h-1c-3 0-6-2-6-5" />
+                        </svg>
+                        {priority}
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
+              {movePrioritiesAssignees && task.assignees?.length > 0 && (
+                <div className="kanban-plugin__item-assignees">
+                  {task.assignees.map((assignee, i) => {
+                    const colorInfo = getAssigneeColor(assignee);
+                    return (
+                      <a
+                        key={i}
+                        className="tag kanban-plugin__item-tag kanban-plugin__item-assignee"
+                        style={colorInfo ? {
+                          '--tag-color': colorInfo.color || '',
+                          '--tag-background': colorInfo.backgroundColor || '',
+                        } : {}}
+                      >
+                        <svg className="kanban-plugin__item-assignee-icon" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                          <circle cx="12" cy="7" r="4" />
+                        </svg>
+                        {assignee}
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
+              {moveTags && task.tags?.length > 0 && (
+                <div className="kanban-plugin__item-tags">
+                  {task.tags.map((tag, i) => (
+                    <a key={i} className="tag kanban-plugin__item-tag">
+                      <span>{tag[0]}</span>
+                      {tag.slice(1)}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : null}
         </div>
       );
     }
