@@ -5,6 +5,13 @@ import { KanbanParser } from './kanban-parser';
 import { KanbanTask, DEFAULT_KANBAN_CALENDAR_SETTINGS } from './types';
 import KanbanPlugin from '../main';
 import { KanbanView } from '../KanbanView';
+import { TagColor } from '../components/types';
+
+interface LabelColorConfig {
+  label: string;
+  color?: string;
+  backgroundColor?: string;
+}
 
 export const VIEW_TYPE_KANBAN_CALENDAR = 'kanban-calendar-view';
 
@@ -139,11 +146,23 @@ export class KanbanCalendarView extends ItemView {
     const calendarSettings = this.plugin.settings['kanban-calendar'] || DEFAULT_KANBAN_CALENDAR_SETTINGS;
     const targetFile = this.getCurrentTargetFile();
 
+    // 获取看板全局设置用于日历渲染
+    const movePrioritiesAssignees = this.plugin.settings['move-priorities-assignees'] || false;
+    const moveTags = this.plugin.settings['move-tags'] || false;
+    const priorityOptions = (this.plugin.settings['priority-options'] || []) as LabelColorConfig[];
+    const assigneeOptions = (this.plugin.settings['assignee-options'] || []) as LabelColorConfig[];
+    const tagColors = (this.plugin.settings['tag-colors'] || []) as TagColor[];
+
     render(h(CalendarComponent, {
       tasks: this.tasks,
       taskColors: calendarSettings.taskColors,
       hideWeekends: calendarSettings.hideWeekends,
       availableLists: this.availableLists,
+      movePrioritiesAssignees,
+      moveTags,
+      priorityOptions,
+      assigneeOptions,
+      tagColors,
       onTaskClick: (_task: KanbanTask) => {
         // Only show modal, don't open file
       },

@@ -1,5 +1,6 @@
 import { TFile, Vault } from 'obsidian';
 import { KanbanTask } from './types';
+import { cleanTaskTitle } from './utils';
 
 interface KanbanBoardSettings {
   dateTrigger?: string;
@@ -121,13 +122,37 @@ export class KanbanParser {
     // Helper function to find tags in a line
     const findTagsInLine = (line: string): string[] => {
       const tags: string[] = [];
-      const tagMatches = line.match(/#[a-zA-Z0-9]+/g);
+      const tagMatches = line.match(/#[a-zA-Z0-9_\-\u4e00-\u9fa5]+/g);
       if (tagMatches) {
         tagMatches.forEach(tag => {
           tags.push(tag);
         });
       }
       return tags;
+    };
+
+    // Helper function to find priorities in a line (!priority)
+    const findPrioritiesInLine = (line: string): string[] => {
+      const priorities: string[] = [];
+      const priorityMatches = line.match(/!([a-zA-Z0-9_\-\u4e00-\u9fa5]+)/g);
+      if (priorityMatches) {
+        priorityMatches.forEach(p => {
+          priorities.push(p.substring(1)); // Remove the ! prefix
+        });
+      }
+      return priorities;
+    };
+
+    // Helper function to find assignees in a line (@assignee)
+    const findAssigneesInLine = (line: string): string[] => {
+      const assignees: string[] = [];
+      const assigneeMatches = line.match(/@([a-zA-Z0-9_\-\u4e00-\u9fa5]+)/g);
+      if (assigneeMatches) {
+        assigneeMatches.forEach(a => {
+          assignees.push(a.substring(1)); // Remove the @ prefix
+        });
+      }
+      return assignees;
     };
 
     // Helper function to check if a line is a task
@@ -153,6 +178,8 @@ export class KanbanParser {
     // Track parent task information for subtasks
     let currentParentDate: string | null = null;
     let currentParentTags: string[] = [];
+    let currentParentPriorities: string[] = [];
+    let currentParentAssignees: string[] = [];
     let currentListName: string | null = null;
 
     for (let i = 0; i < lines.length; i++) {
@@ -178,19 +205,25 @@ export class KanbanParser {
         // Extract task description
         let description = line.replace(/- \[ \]|- \[x\]/, '').trim();
 
-        // Look for date in current line
+        // Look for date, tags, priorities, assignees in current line
         let date = findDateInLine(line);
         let tags = findTagsInLine(line);
+        let priorities = findPrioritiesInLine(line);
+        let assignees = findAssigneesInLine(line);
         let time: string | null = null;
 
-        // If this is a subtask, use parent task's date and tags if available
+        // If this is a subtask, use parent task's data if available
         if (isSubtask && currentParentDate) {
           if (!date) date = currentParentDate;
           tags = [...tags, ...currentParentTags];
+          priorities = [...priorities, ...currentParentPriorities];
+          assignees = [...assignees, ...currentParentAssignees];
         } else if (!isSubtask) {
           // This is a parent task, store its info for potential subtasks
           currentParentDate = date;
           currentParentTags = [...tags];
+          currentParentPriorities = [...priorities];
+          currentParentAssignees = [...assignees];
         }
 
         // If date not found in current line, look ahead up to 3 lines
@@ -208,9 +241,13 @@ export class KanbanParser {
             if (nextLineDate) {
               date = nextLineDate;
 
-              // Also look for tags in this line
+              // Also look for tags, priorities, assignees in this line
               const nextLineTags = findTagsInLine(nextLine);
+              const nextLinePriorities = findPrioritiesInLine(nextLine);
+              const nextLineAssignees = findAssigneesInLine(nextLine);
               tags = [...tags, ...nextLineTags];
+              priorities = [...priorities, ...nextLinePriorities];
+              assignees = [...assignees, ...nextLineAssignees];
 
               // Extract time if available (single time or time range)
               const timeRangeMatch = nextLine.match(timeRangePattern);
@@ -226,10 +263,12 @@ export class KanbanParser {
                 time = singleTimeMatch[1];
               }
 
-              // Update parent date and tags if this is a parent task
+              // Update parent data if this is a parent task
               if (!isSubtask) {
                 currentParentDate = date;
                 currentParentTags = [...currentParentTags, ...nextLineTags];
+                currentParentPriorities = [...currentParentPriorities, ...nextLinePriorities];
+                currentParentAssignees = [...currentParentAssignees, ...nextLineAssignees];
               }
 
               break;
@@ -252,22 +291,18 @@ export class KanbanParser {
             linkedNote = linkMatch[1];
           }
 
-          // Clean up description - remove date and time markers
-          const dateMarkerPattern = new RegExp(`${escapedDateTrigger}\\{\\d{4}-\\d{2}-\\d{2}\\}`, 'g');
-          const timeMarkerPattern = new RegExp(`${escapedTimeTrigger}\\{[^}]+\\}`, 'g');
-
-          description = description.replace(dateMarkerPattern, '').trim();
-          if (time) description = description.replace(timeMarkerPattern, '').trim();
-
-          // Remove tags from description
-          tags.forEach(tag => {
-            description = description.replace(tag, '').trim();
-          });
-
-          // Remove markdown formatting (bold, italic, etc.)
-          description = description.replace(/\*\*(.*?)\*\*/g, '$1').trim(); // Remove bold
-          description = description.replace(/\*(.*?)\*/g, '$1').trim(); // Remove italic
-          description = description.replace(/__(.*?)__/g, '$1').trim(); // Remove underline
+          // 使用统一的清理函数
+          // 侧边栏总是提取并移除这些元素，CalendarComponent 会根据配置决定显示位置
+          const cleanedDescription = cleanTaskTitle(
+            description,
+            dateTrigger!,
+            timeTrigger!,
+            true,  // movePrioritiesAssignees - 总是移除
+            true,  // moveTags - 总是移除
+            priorities,
+            assignees,
+            tags
+          );
 
           // Parse time into startTime and endTime if it's a range
           let startTime: string | undefined;
@@ -289,20 +324,20 @@ export class KanbanParser {
           }
 
           // Generate a more stable ID based on content
-          const taskId = `task-${filePath.replace(/[^a-zA-Z0-9]/g, '_')}-${description.substring(0, 20).replace(/[^a-zA-Z0-9]/g, '_')}-${date}`;
+          const taskId = `task-${filePath.replace(/[^a-zA-Z0-9]/g, '_')}-${cleanedDescription.substring(0, 20).replace(/[^a-zA-Z0-9]/g, '_')}-${date}`;
 
           // Add task to parsed tasks
           tasks.push({
             id: taskId,
-            description,
-            titleRaw: description, // For plain markdown files, same as description
+            description: cleanedDescription,
+            titleRaw: cleanedDescription,
             date,
             time: displayTime,
             startTime,
             endTime,
             tags,
-            priorities: [], // Not available in plain markdown
-            assignees: [], // Not available in plain markdown
+            priorities,
+            assignees,
             completed,
             source: filePath,
             linkedNote,
