@@ -304,8 +304,6 @@
   border-radius: 3px;
   font-size: 0.8em;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   cursor: grab;
   transition: background-color 0.2s, transform 0.2s;
 }
@@ -329,12 +327,35 @@
 .kanban-calendar-task-compact-footer .kanban-plugin__item-tag {
   font-size: 0.9em;
   padding: 1px 4px;
+  background-color: var(--tag-background, hsla(var(--interactive-accent-hsl), 0.1));
+  color: var(--tag-color, var(--text-accent));
 }
 
 .kanban-calendar-task-compact-footer .kanban-plugin__item-priority-icon,
 .kanban-calendar-task-compact-footer .kanban-plugin__item-assignee-icon {
   width: 10px;
   height: 10px;
+}
+
+/* 确保日历中的标签样式与看板一致 */
+.kanban-plugin__item-tags .kanban-plugin__item-tag,
+.kanban-plugin__item-priorities .kanban-plugin__item-tag,
+.kanban-plugin__item-assignees .kanban-plugin__item-tag {
+  background-color: var(--tag-background, hsla(var(--interactive-accent-hsl), 0.1));
+  color: var(--tag-color, var(--text-accent));
+}
+
+.kanban-plugin__item-tag {
+  display: inline-block;
+  border-radius: var(--tag-radius);
+  padding: 1px 6px;
+}
+
+.kanban-plugin__item-priority-icon,
+.kanban-plugin__item-assignee-icon {
+  width: 12px;
+  height: 12px;
+  vertical-align: middle;
 }
 
 /* Completed tasks styling - only apply default green if no custom color is set */

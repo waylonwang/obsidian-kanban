@@ -1,11 +1,10 @@
-import { VNode } from 'preact';
 import { useState, useMemo } from 'preact/hooks';
-import { Board, Item, Lane } from '../types';
+import { Board, Item, Lane, TagColor } from '../types';
 import { StateManager } from '../../StateManager';
 import { KanbanView } from '../../KanbanView';
 import { KanbanTask } from '../../calendar/types';
 import { CalendarComponent } from '../../calendar/calendar-component';
-import { MarkdownRenderer } from '../MarkdownRenderer/MarkdownRenderer';
+import { cleanTaskTitle } from '../../calendar/utils';
 
 interface BoardCalendarViewProps {
   boardData: Board;
@@ -17,52 +16,6 @@ interface LabelColorConfig {
   label: string;
   color?: string;
   backgroundColor?: string;
-}
-
-/**
- * 清理title，移除日期时间标记
- */
-function cleanTitle(title: string, dateTrigger: string, timeTrigger: string): string {
-  // 移除日期标记: %{YYYY-MM-DD} 或自定义触发符
-  const datePattern = new RegExp(`${dateTrigger.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\{[^}]+\\}`, 'g');
-  let cleaned = title.replace(datePattern, '');
-
-  // 移除时间标记: %%{HH:MM} 或自定义触发符
-  const timePattern = new RegExp(`${timeTrigger.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\{[^}]+\\}`, 'g');
-  cleaned = cleaned.replace(timePattern, '');
-
-  return cleaned.trim();
-}
-
-/**
- * 从title中移除优先级和负责人（当move-priorities-assignees开启时）
- */
-function removePrioritiesAndAssigneesFromTitle(title: string, priorities: string[], assignees: string[]): string {
-  let cleaned = title;
-  // 移除优先级标记 !priority
-  priorities.forEach(p => {
-    const pattern = new RegExp(`!${p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g');
-    cleaned = cleaned.replace(pattern, '');
-  });
-  // 移除负责人标记 @assignee
-  assignees.forEach(a => {
-    const pattern = new RegExp(`@${a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g');
-    cleaned = cleaned.replace(pattern, '');
-  });
-  return cleaned.trim();
-}
-
-/**
- * 从title中移除标签（当move-tags开启时）
- */
-function removeTagsFromTitle(title: string, tags: string[]): string {
-  let cleaned = title;
-  tags.forEach(tag => {
-    // 标签可能是 #tag 或 tag 格式
-    const tagPattern = new RegExp(`#${tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}|${tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g');
-    cleaned = cleaned.replace(tagPattern, '');
-  });
-  return cleaned.trim();
 }
 
 /**
@@ -93,21 +46,21 @@ function boardToTasks(
           linkedNote = linkMatch[1];
         }
 
-        // 清理title：移除日期时间标记
-        let cleanedTitle = cleanTitle(titleRaw || title, dateTrigger, timeTrigger);
-
-        // 如果开启move-priorities-assignees，移除优先级和负责人
         const priorities = metadata.priorities || [];
         const assignees = metadata.assignees || [];
-        if (movePrioritiesAssignees) {
-          cleanedTitle = removePrioritiesAndAssigneesFromTitle(cleanedTitle, priorities, assignees);
-        }
-
-        // 如果开启move-tags，移除标签
         const tags = metadata.tags || [];
-        if (moveTags) {
-          cleanedTitle = removeTagsFromTitle(cleanedTitle, tags);
-        }
+
+        // 使用统一的清理函数
+        const cleanedTitle = cleanTaskTitle(
+          titleRaw || title,
+          dateTrigger,
+          timeTrigger,
+          movePrioritiesAssignees,
+          moveTags,
+          priorities,
+          assignees,
+          tags
+        );
 
         const task: KanbanTask = {
           id: item.id,
@@ -151,6 +104,7 @@ export const BoardCalendarView = ({ boardData, stateManager, view }: BoardCalend
   const moveTags = stateManager.getSetting('move-tags') || false;
   const priorityOptions = (stateManager.getSetting('priority-options') || []) as LabelColorConfig[];
   const assigneeOptions = (stateManager.getSetting('assignee-options') || []) as LabelColorConfig[];
+  const tagColors = (stateManager.getSetting('tag-colors') || []) as TagColor[];
 
   // 获取 calendar 设置
   const calendarSettings = stateManager.getSetting('kanban-calendar') || {
@@ -178,17 +132,6 @@ export const BoardCalendarView = ({ boardData, stateManager, view }: BoardCalend
 
   // 获取列表名称
   const availableLists = useMemo(() => getListsFromBoard(boardData), [boardData]);
-
-  // 自定义任务内容渲染函数 - 使用 MarkdownRenderer 渲染链接等
-  const renderTaskContent = (task: KanbanTask): VNode => {
-    return (
-      <MarkdownRenderer
-        entityId={task.id}
-        className="kanban-calendar-item-markdown"
-        markdownString={task.titleRaw}
-      />
-    );
-  };
 
   // 处理任务点击
   const handleTaskClick = (task: KanbanTask) => {
@@ -270,11 +213,11 @@ export const BoardCalendarView = ({ boardData, stateManager, view }: BoardCalend
         initialView={calendarSettings.calendarView}
         calendarLocation={calendarLocation}
         onLocationChange={handleLocationChange}
-        renderTaskContent={renderTaskContent}
         movePrioritiesAssignees={movePrioritiesAssignees}
         moveTags={moveTags}
         priorityOptions={priorityOptions}
         assigneeOptions={assigneeOptions}
+        tagColors={tagColors}
       />
     </div>
   );
