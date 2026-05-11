@@ -23,6 +23,9 @@ const en = {
   'Open as markdown': 'Open as markdown',
   'Open board settings': 'Open board settings',
   'Archive completed cards': 'Archive completed cards',
+  'Clone template': 'Clone template',
+  'Enter file name for new kanban': 'Enter file name for new kanban',
+  'Clone columns only (without tasks)': 'Clone columns only (without tasks)',
   'Something went wrong': 'Something went wrong',
   'You may wish to open as markdown and inspect or edit the file.':
     'You may wish to open as markdown and inspect or edit the file.',

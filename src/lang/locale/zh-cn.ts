@@ -24,6 +24,9 @@ const lang: Partial<Lang> = {
   'Open as markdown': '打开为 Markdown 文件',
   'Open board settings': '打开看板设置',
   'Archive completed cards': '归档已完成卡片',
+  'Clone template': '克隆模板',
+  'Enter file name for new kanban': '输入新看板的文件名',
+  'Clone columns only (without tasks)': '仅克隆列（不包含任务）',
   'Something went wrong': '出了点问题',
   'You may wish to open as markdown and inspect or edit the file.':
     '你可能希望以 Markdown 方式打开，并检查或编辑该文件。',

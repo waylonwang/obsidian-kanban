@@ -4,12 +4,14 @@ import {
   HoverParent,
   HoverPopover,
   Menu,
+  Modal,
   Platform,
   TFile,
   TextFileView,
   ViewStateResult,
   WorkspaceLeaf,
   debounce,
+  stringifyYaml,
 } from 'obsidian';
 
 import { KanbanFormat, KanbanSettings, KanbanViewSettings, SettingsModal } from './Settings';
@@ -130,6 +132,65 @@ export class KanbanView extends TextFileView implements HoverParent {
   getBoard(): Board {
     const stateManager = this.plugin.stateManagers.get(this.file);
     return stateManager.state;
+  }
+
+  async cloneTemplate(fileName: string) {
+    const stateManager = this.plugin.stateManagers.get(this.file);
+    if (!stateManager) return;
+
+    const board = stateManager.state;
+
+    // Generate columns-only template markdown
+    const lines: string[] = [];
+
+    // Frontmatter
+    const frontmatter = board.data.frontmatter || { 'kanban-plugin': 'board' };
+    lines.push('---');
+    lines.push('');
+    lines.push(stringifyYaml(frontmatter));
+    lines.push('---');
+    lines.push('');
+    lines.push('');
+
+    // Columns (lanes) without items
+    for (const lane of board.children) {
+      const maxItemsStr = lane.data.maxItems ? ` (${lane.data.maxItems})` : '';
+      lines.push(`## ${lane.data.title}${maxItemsStr}`);
+      lines.push('');
+      if (lane.data.shouldMarkItemsComplete) {
+        lines.push('**Complete**');
+        lines.push('');
+      }
+      lines.push('');
+      lines.push('');
+    }
+
+    // Settings codeblock
+    lines.push('');
+    lines.push('');
+    lines.push('%% kanban:settings');
+    lines.push('```');
+    lines.push(JSON.stringify(board.data.settings));
+    lines.push('```');
+    lines.push('%%');
+
+    const content = lines.join('\n');
+
+    // Create new file in the same folder as current file
+    const parentFolder = this.file.parent;
+    const newFileName = fileName.endsWith('.md') ? fileName : fileName + '.md';
+    const newPath = parentFolder && parentFolder.path !== '/' ? `${parentFolder.path}/${newFileName}` : newFileName;
+
+    try {
+      const newFile = await this.app.vault.create(newPath, content);
+      // Open the new file in kanban view
+      await this.app.workspace.getLeaf().setViewState({
+        type: kanbanViewType,
+        state: { file: newFile.path },
+      });
+    } catch (e) {
+      console.error('Error cloning template:', e);
+    }
   }
 
   getViewType() {
@@ -471,6 +532,28 @@ export class KanbanView extends TextFileView implements HoverParent {
       delete this.actionButtons['show-archive-all'];
     }
 
+    if (
+      stateManager.getSetting('show-clone-template') &&
+      !this.actionButtons['show-clone-template']
+    ) {
+      this.actionButtons['show-clone-template'] = this.addAction(
+        'lucide-copy',
+        t('Clone template'),
+        () => {
+          const defaultName = this.file?.basename || 'Untitled Kanban';
+          new CloneTemplateNameModal(this.app, defaultName, (fileName) => {
+            this.cloneTemplate(fileName);
+          }).open();
+        }
+      );
+    } else if (
+      !stateManager.getSetting('show-clone-template') &&
+      this.actionButtons['show-clone-template']
+    ) {
+      this.actionButtons['show-clone-template'].remove();
+      delete this.actionButtons['show-clone-template'];
+    }
+
     if (stateManager.getSetting('show-add-list') && !this.actionButtons['show-add-list']) {
       const btn = this.addAction('lucide-plus-circle', t('Add a list'), () => {
         this.emitter.emit('showLaneForm', undefined);
@@ -504,5 +587,67 @@ export class KanbanView extends TextFileView implements HoverParent {
       there's nothing to do in this method.  (We can't omit it, since it's
       abstract.)
     */
+  }
+}
+
+class CloneTemplateNameModal extends Modal {
+  onSubmit: (fileName: string) => void;
+  defaultName: string;
+
+  constructor(app: any, defaultName: string, onSubmit: (fileName: string) => void) {
+    super(app);
+    this.defaultName = defaultName;
+    this.onSubmit = onSubmit;
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+
+    contentEl.createEl('h3', { text: t('Clone template') });
+
+    const inputContainer = contentEl.createDiv({ cls: 'modal-content' });
+    const input = inputContainer.createEl('input', {
+      type: 'text',
+      value: this.defaultName,
+      cls: 'kanban-clone-template-input',
+    });
+    input.style.width = '100%';
+    input.style.marginTop = '10px';
+    input.focus();
+
+    const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
+    buttonContainer.style.display = 'flex';
+    buttonContainer.style.justifyContent = 'flex-end';
+    buttonContainer.style.marginTop = '20px';
+    buttonContainer.style.gap = '10px';
+
+    const cancelButton = buttonContainer.createEl('button', { text: 'Cancel' });
+    cancelButton.addEventListener('click', () => this.close());
+
+    const createButton = buttonContainer.createEl('button', { text: 'Create', cls: 'mod-cta' });
+    createButton.addEventListener('click', () => {
+      const fileName = input.value.trim();
+      if (fileName) {
+        this.onSubmit(fileName);
+        this.close();
+      }
+    });
+
+    input.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        const fileName = input.value.trim();
+        if (fileName) {
+          this.onSubmit(fileName);
+          this.close();
+        }
+      } else if (e.key === 'Escape') {
+        this.close();
+      }
+    });
+  }
+
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
   }
 }
